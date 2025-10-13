@@ -50,10 +50,10 @@ In your Render service settings, add these environment variables:
 
 ```env
 # Database Configuration
-DB_HOST=pp-lb.bazarchic.com
-DB_USER=bazar
+DB_HOST=
+DB_USER=
 DB_PASSWORD=your_database_password
-DB_NAME=bazarshop_base
+DB_NAME=
 DB_PORT=3306
 
 # Cloudinary Configuration
