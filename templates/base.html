@@ -61,7 +61,7 @@
               <div class="relative items-center flex">
                 <button
                   id="cloudinary-dropdown-btn"
-                  class="{% if 'cloudinary' in request.endpoint %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
+                  class="{% if 'cloudinary' in request.endpoint %}border-primary h-full text-gray-900{% else %}border-transparent text-gray-500 h-full hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
                   aria-expanded="false"
                   aria-haspopup="true"
                 >
@@ -83,7 +83,7 @@
                 </button>
                 <div
                   id="cloudinary-dropdown-menu"
-                  class="hidden absolute left-0 mt-2 w-64 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200"
+                  class="hidden absolute left-0 mt-2 top-[56px] w-64 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 border border-gray-200"
                 >
                   <div class="py-1">
                     <div class="px-4 py-2 border-b border-gray-200 bg-gray-50">
