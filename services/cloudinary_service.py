@@ -23,6 +23,10 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
+print(os.getenv('CLOUDINARY_CLOUD_NAME'))
+print(os.getenv('CLOUDINARY_API_KEY'))
+print(os.getenv('CLOUDINARY_API_SECRET'))
+
 
 class CloudinaryService:
     """Service for uploading images to Cloudinary"""

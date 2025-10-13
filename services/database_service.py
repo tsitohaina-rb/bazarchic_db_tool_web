@@ -12,6 +12,12 @@ from html import unescape
 # Load environment variables
 load_dotenv()
 
+print(os.getenv('DB_HOST'))
+print(os.getenv('DB_USER'))
+print(os.getenv('DB_PASSWORD'))
+print(os.getenv('DB_NAME'))
+print(os.getenv('DB_PORT'))
+
 def clean_html(text):
     """Remove HTML tags and decode HTML entities from text"""
     if not text or text.strip() == '':
