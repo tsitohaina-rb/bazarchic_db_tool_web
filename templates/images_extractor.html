@@ -4,93 +4,97 @@ Tool{% endblock %} {% block content %}
   <!-- Header -->
   <div class="bg-white rounded-lg shadow-md p-6">
     <h1 class="text-2xl font-bold text-gray-800">
-      <i class="fas fa-images text-green-600 mr-2"></i>Extract Product Image
-      URLs
+      <i class="fas fa-images text-orange-600 mr-2"></i
+      ><span id="pageTitle">Extract Product Image URLs</span>
     </h1>
-    <p class="text-gray-600 mt-2">
+    <p class="text-gray-600 mt-2" id="pageDescription">
       Get all product image URLs by EAN or REF codes with CSV export
     </p>
   </div>
 
-  <!-- Search Type Selection -->
+  <!-- Search Form -->
   <div class="bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-lg font-bold text-gray-800 mb-4">Select Search Type</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <label class="cursor-pointer">
-        <input
-          type="radio"
-          name="search_type"
-          value="ean"
-          checked
-          class="hidden search-type-radio"
-        />
-        <div
-          class="search-type-card border-2 border-primary bg-blue-50 rounded-lg p-4 transition-all"
-        >
-          <div class="flex items-center">
-            <i class="fas fa-barcode text-primary text-2xl mr-3"></i>
-            <div>
-              <p class="font-semibold text-gray-800">Search by EAN</p>
-              <p class="text-sm text-gray-600">Exact match by barcode</p>
-            </div>
-          </div>
-        </div>
-      </label>
-
-      <label class="cursor-pointer">
-        <input
-          type="radio"
-          name="search_type"
-          value="ref"
-          class="hidden search-type-radio"
-        />
-        <div
-          class="search-type-card border-2 border-gray-300 rounded-lg p-4 transition-all"
-        >
-          <div class="flex items-center">
-            <i class="fas fa-tag text-primary text-2xl mr-3"></i>
-            <div>
-              <p class="font-semibold text-gray-800">Search by REF</p>
-              <p class="text-sm text-gray-600">Product reference code</p>
-            </div>
-          </div>
-        </div>
-      </label>
-    </div>
-
-    <!-- Search Form -->
     <form
       method="POST"
       action="{{ url_for('images.extractor_export') }}"
       enctype="multipart/form-data"
       id="extractForm"
     >
-      <input
-        type="hidden"
-        name="search_type"
-        id="search_type_input"
-        value="ean"
-      />
-
-      <!-- Search Method -->
+      <!-- Search Type Selection (EAN or REF) -->
       <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2"
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Search Type</label
+        >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_type"
+              value="ean"
+              checked
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-barcode text-primary text-2xl mr-3"></i>
+                <div>
+                  <p class="font-semibold text-gray-800">Search by EAN</p>
+                  <p class="text-xs text-gray-600 mt-1">Exact EAN code match</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_type"
+              value="ref"
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-hashtag text-primary text-2xl mr-3"></i>
+                <div>
+                  <p class="font-semibold text-gray-800">Search by REF</p>
+                  <p class="text-xs text-gray-600 mt-1">
+                    Partial reference match (LIKE)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Search Method Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3"
           >Search Method</label
         >
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label class="cursor-pointer">
             <input
               type="radio"
               name="search_method"
               value="single"
               checked
-              class="hidden method-radio"
+              class="peer sr-only"
             />
             <div
-              class="method-card border-2 border-primary bg-blue-50 rounded-lg p-3 text-center transition-all"
+              class="border-2 border-gray-300 peer-checked:border-blue-600 peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
             >
-              <i class="fas fa-file-alt text-primary text-xl mb-1"></i>
-              <p class="text-sm font-semibold">Single Code</p>
+              <div class="flex items-center justify-between">
+                <div>
+                  <i class="fas fa-search text-primary text-2xl mb-2 block"></i>
+                  <p class="font-semibold text-gray-800">Single Code</p>
+                  <p class="text-xs text-gray-600 mt-1">Search one code</p>
+                </div>
+              </div>
             </div>
           </label>
 
@@ -99,13 +103,18 @@ Tool{% endblock %} {% block content %}
               type="radio"
               name="search_method"
               value="multiple"
-              class="hidden method-radio"
+              class="peer sr-only"
             />
             <div
-              class="method-card border-2 border-gray-300 rounded-lg p-3 text-center transition-all"
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
             >
-              <i class="fas fa-list text-primary text-xl mb-1"></i>
-              <p class="text-sm font-semibold">Multiple Codes</p>
+              <div class="flex items-center justify-between">
+                <div>
+                  <i class="fas fa-list text-primary text-2xl mb-2 block"></i>
+                  <p class="font-semibold text-gray-800">Multiple Codes</p>
+                  <p class="text-xs text-gray-600 mt-1">Comma-separated list</p>
+                </div>
+              </div>
             </div>
           </label>
 
@@ -114,58 +123,64 @@ Tool{% endblock %} {% block content %}
               type="radio"
               name="search_method"
               value="file"
-              class="hidden method-radio"
+              class="peer sr-only"
             />
             <div
-              class="method-card border-2 border-gray-300 rounded-lg p-3 text-center transition-all"
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
             >
-              <i class="fas fa-file-upload text-primary text-xl mb-1"></i>
-              <p class="text-sm font-semibold">File Upload</p>
+              <div class="flex items-center justify-between">
+                <div>
+                  <i
+                    class="fas fa-file-upload text-primary text-2xl mb-2 block"
+                  ></i>
+                  <p class="font-semibold text-gray-800">Upload File</p>
+                  <p class="text-xs text-gray-600 mt-1">Text file with codes</p>
+                </div>
+              </div>
             </div>
           </label>
         </div>
       </div>
 
       <!-- Single Code Input -->
-      <div class="mb-6 method-content" id="single-content">
+      <div id="singleInput" class="search-input mb-6">
         <label
           class="block text-sm font-medium text-gray-700 mb-2"
-          id="single-label"
-          >Enter EAN Code</label
+          id="singleLabel"
+          >Code</label
         >
         <input
           type="text"
           name="code"
-          id="single-input"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-          placeholder="Enter single code"
+          id="singleCode"
+          placeholder="Enter code..."
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       <!-- Multiple Codes Input -->
-      <div class="mb-6 method-content hidden" id="multiple-content">
+      <div id="multipleInput" class="search-input hidden mb-6">
         <label
           class="block text-sm font-medium text-gray-700 mb-2"
-          id="multiple-label"
-          >Enter Multiple EAN Codes</label
+          id="multipleLabel"
+          >Codes (comma-separated)</label
         >
         <textarea
           name="codes"
-          rows="5"
-          id="multiple-input"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-          placeholder="Enter codes separated by comma or new line"
+          id="multipleCodes"
+          rows="4"
+          placeholder="Enter codes separated by commas..."
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
         ></textarea>
-        <p class="text-sm text-gray-500 mt-2">
-          <i class="fas fa-info-circle mr-1"></i>
-          Separate codes with comma or new line
+        <p class="text-xs text-gray-500 mt-1" id="multipleExample">
+          Example: code1, code2, code3
         </p>
       </div>
 
       <!-- File Upload Input -->
-      <div class="mb-6 method-content hidden" id="file-content">
+      <div id="fileInput" class="search-input hidden mb-6">
         <label class="block text-sm font-medium text-gray-700 mb-2"
-          >Upload File with Codes</label
+          >Upload Text File</label
         >
         <div class="relative">
           <input
@@ -196,8 +211,9 @@ Tool{% endblock %} {% block content %}
               </p>
               <p
                 class="text-xs text-gray-500 group-hover:text-primary transition-colors duration-300"
+                id="fileDescription"
               >
-                Upload a file with one code per line
+                Text file with one code per line
               </p>
               <div
                 class="mt-2 px-3 py-1 bg-blue-100 text-primary rounded-full text-xs font-medium group-hover:bg-blue-200 transition-colors duration-300"
@@ -222,159 +238,155 @@ Tool{% endblock %} {% block content %}
     </form>
   </div>
 
-  <!-- Info Panel -->
+  <!-- Search Info -->
   <div
-    class="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg shadow-md p-6 border border-green-200"
+    class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg shadow-md p-6 border border-blue-200"
+    id="infoPanel"
   >
     <h2 class="text-lg font-bold text-gray-800 mb-4">
-      <i class="fas fa-info-circle text-green-600 mr-2"></i>How It Works
+      <i class="fas fa-info-circle text-blue-600 mr-2"></i
+      ><span id="infoTitle">Image Extraction Information</span>
     </h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <h3 class="font-semibold text-gray-800 mb-2">EAN Search</h3>
-        <div class="space-y-2 text-sm text-gray-700">
-          <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>Exact match by barcode number</span>
-          </p>
-          <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>Returns up to 10 image URLs per product</span>
-          </p>
-          <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>CSV: ean, image_1, image_2, ..., image_10</span>
-          </p>
+    <div class="space-y-3 text-gray-700" id="infoContent">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-2">EAN Search</h3>
+          <div class="space-y-2 text-sm text-gray-700">
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>Exact match by barcode number</span>
+            </p>
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>Returns up to 10 image URLs per product</span>
+            </p>
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>CSV: ean, image_1, image_2, ..., image_10</span>
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-2">REF Search</h3>
+          <div class="space-y-2 text-sm text-gray-700">
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>Search by product reference code</span>
+            </p>
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>Multiple products per REF possible</span>
+            </p>
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-blue-500 mr-2 mt-0.5"></i>
+              <span>CSV: ref, ean, image_1, ..., image_10</span>
+            </p>
+          </div>
         </div>
       </div>
 
-      <div>
-        <h3 class="font-semibold text-gray-800 mb-2">REF Search</h3>
+      <div class="mt-4 pt-4 border-t border-blue-300">
+        <h3 class="font-semibold text-gray-800 mb-2">Export Format</h3>
         <div class="space-y-2 text-sm text-gray-700">
           <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>Search by product reference code</span>
+            <i class="fas fa-file-csv text-blue-500 mr-2 mt-0.5"></i>
+            <span
+              ><strong>3 CSV Files:</strong> ALL (found + not found), FOUND
+              only, NOT FOUND only</span
+            >
           </p>
           <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>Multiple products per REF possible</span>
+            <i class="fas fa-download text-blue-500 mr-2 mt-0.5"></i>
+            <span
+              ><strong>ZIP Download:</strong> All 3 files packaged
+              together</span
+            >
           </p>
           <p class="flex items-start">
-            <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-            <span>CSV: ref, ean, image_1, ..., image_10</span>
+            <i class="fas fa-link text-blue-500 mr-2 mt-0.5"></i>
+            <span
+              ><strong>CDN URLs:</strong>
+              https://cdn.bazarchic.com/i/tmp/[image_id].[ext]</span
+            >
           </p>
         </div>
-      </div>
-    </div>
-
-    <div class="mt-4 pt-4 border-t border-green-300">
-      <h3 class="font-semibold text-gray-800 mb-2">Export Format</h3>
-      <div class="space-y-2 text-sm text-gray-700">
-        <p class="flex items-start">
-          <i class="fas fa-file-csv text-green-500 mr-2 mt-0.5"></i>
-          <span
-            ><strong>3 CSV Files:</strong> ALL (found + not found), FOUND only,
-            NOT FOUND only</span
-          >
-        </p>
-        <p class="flex items-start">
-          <i class="fas fa-download text-green-500 mr-2 mt-0.5"></i>
-          <span
-            ><strong>ZIP Download:</strong> All 3 files packaged together</span
-          >
-        </p>
-        <p class="flex items-start">
-          <i class="fas fa-link text-green-500 mr-2 mt-0.5"></i>
-          <span
-            ><strong>CDN URLs:</strong>
-            https://cdn.bazarchic.com/i/tmp/[image_id].[ext]</span
-          >
-        </p>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Search type radio buttons
-  const searchTypeRadios = document.querySelectorAll(".search-type-radio");
-  const searchTypeCards = document.querySelectorAll(".search-type-card");
-  const searchTypeInput = document.getElementById("search_type_input");
-  const singleLabel = document.getElementById("single-label");
-  const multipleLabel = document.getElementById("multiple-label");
-  const singleInput = document.getElementById("single-input");
-  const multipleInput = document.getElementById("multiple-input");
+  // Handle search type switching (EAN vs REF)
+  const searchTypeRadios = document.querySelectorAll(
+    'input[name="search_type"]'
+  );
+  const pageTitle = document.getElementById("pageTitle");
+  const pageDescription = document.getElementById("pageDescription");
+  const singleLabel = document.getElementById("singleLabel");
+  const multipleLabel = document.getElementById("multipleLabel");
+  const multipleExample = document.getElementById("multipleExample");
+  const fileDescription = document.getElementById("fileDescription");
+  const infoTitle = document.getElementById("infoTitle");
 
-  searchTypeRadios.forEach((radio, index) => {
+  searchTypeRadios.forEach((radio) => {
     radio.addEventListener("change", function () {
-      // Update card styles
-      searchTypeCards.forEach((card) => {
-        card.classList.remove(
-          "border-blue-500",
-          "bg-blue-50",
-          "border-purple-500",
-          "bg-purple-50"
-        );
-        card.classList.add("border-gray-300");
-      });
-
       if (this.value === "ean") {
-        searchTypeCards[index].classList.remove("border-gray-300");
-        searchTypeCards[index].classList.add("border-blue-500", "bg-blue-50");
-        singleLabel.textContent = "Enter EAN Code";
-        multipleLabel.textContent = "Enter Multiple EAN Codes";
-        singleInput.placeholder = "e.g., 3614273444149";
-        multipleInput.placeholder =
-          "Enter EAN codes separated by comma or new line";
-      } else {
-        searchTypeCards[index].classList.remove("border-gray-300");
-        searchTypeCards[index].classList.add(
-          "border-purple-500",
-          "bg-purple-50"
-        );
-        singleLabel.textContent = "Enter REF Code";
-        multipleLabel.textContent = "Enter Multiple REF Codes";
-        singleInput.placeholder = "e.g., PROD123";
-        multipleInput.placeholder =
-          "Enter REF codes separated by comma or new line";
-      }
+        pageTitle.textContent = "Extract Product Image URLs by EAN";
+        pageDescription.textContent =
+          "Get all product image URLs by EAN codes with CSV export";
+        singleLabel.textContent = "EAN Code";
+        multipleLabel.textContent = "EAN Codes (comma-separated)";
+        multipleExample.textContent =
+          "Example: 1234567890123, 9876543210987, 5555555555555";
+        fileDescription.textContent = "Text file with one EAN per line";
+        infoTitle.textContent = "EAN Image Extraction Information";
 
-      searchTypeInput.value = this.value;
+        // Update placeholder
+        document.getElementById("singleCode").placeholder = "Enter EAN code...";
+        document.getElementById("multipleCodes").placeholder =
+          "Enter EAN codes separated by commas...";
+      } else {
+        pageTitle.textContent = "Extract Product Image URLs by REF";
+        pageDescription.textContent =
+          "Get all product image URLs by REF codes with CSV export";
+        singleLabel.textContent = "REF Code";
+        multipleLabel.textContent = "REF Codes (comma-separated)";
+        multipleExample.textContent = "Example: REF001, REF002, REF003";
+        fileDescription.textContent = "Text file with one REF per line";
+        infoTitle.textContent = "REF Image Extraction Information";
+
+        // Update placeholder
+        document.getElementById("singleCode").placeholder = "Enter REF code...";
+        document.getElementById("multipleCodes").placeholder =
+          "Enter REF codes separated by commas...";
+      }
     });
   });
 
-  // Method radio buttons
-  const methodRadios = document.querySelectorAll(".method-radio");
-  const methodCards = document.querySelectorAll(".method-card");
-  const methodContents = document.querySelectorAll(".method-content");
+  // Handle search method switching
+  const searchMethodRadios = document.querySelectorAll(
+    'input[name="search_method"]'
+  );
+  const singleInput = document.getElementById("singleInput");
+  const multipleInput = document.getElementById("multipleInput");
+  const fileInput = document.getElementById("fileInput");
 
-  methodRadios.forEach((radio, index) => {
+  searchMethodRadios.forEach((radio) => {
     radio.addEventListener("change", function () {
-      // Update card styles
-      methodCards.forEach((card) => {
-        card.classList.remove(
-          "border-blue-500",
-          "bg-blue-50",
-          "border-purple-500",
-          "bg-purple-50",
-          "border-green-500",
-          "bg-green-50"
-        );
-        card.classList.add("border-gray-300");
-      });
+      // Hide all inputs
+      singleInput.classList.add("hidden");
+      multipleInput.classList.add("hidden");
+      fileInput.classList.add("hidden");
 
-      const colors = ["blue", "purple", "green"];
-      methodCards[index].classList.remove("border-gray-300");
-      methodCards[index].classList.add(
-        `border-${colors[index]}-500`,
-        `bg-${colors[index]}-50`
-      );
-
-      // Show/hide content
-      methodContents.forEach((content) => content.classList.add("hidden"));
-      document
-        .getElementById(`${this.value}-content`)
-        .classList.remove("hidden");
+      // Show selected input
+      if (this.value === "single") {
+        singleInput.classList.remove("hidden");
+      } else if (this.value === "multiple") {
+        multipleInput.classList.remove("hidden");
+      } else if (this.value === "file") {
+        fileInput.classList.remove("hidden");
+      }
     });
   });
 
@@ -386,8 +398,8 @@ Tool{% endblock %} {% block content %}
 
   form.addEventListener("submit", function (e) {
     submitBtn.disabled = true;
-    submitIcon.className = "fas fa-spinner fa-spin mr-3";
-    submitText.textContent = "Extracting...";
+    submitIcon.className = "fas fa-spinner fa-spin mr-3 text-lg";
+    submitText.textContent = "Extracting Image URLs...";
   });
 
   // Update file name display
@@ -396,12 +408,10 @@ Tool{% endblock %} {% block content %}
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       fileName.innerHTML = `
-                <i class="fas fa-file-alt text-green-600 mr-2"></i>
-                <span class="font-medium">${file.name}</span> 
-                <span class="text-gray-500">(${(file.size / 1024).toFixed(
-                  1
-                )} KB)</span>
-            `;
+        <i class="fas fa-file-alt text-primary mr-2"></i>
+        <span class="font-medium">${file.name}</span> 
+        <span class="text-gray-500">(${(file.size / 1024).toFixed(1)} KB)</span>
+      `;
       fileName.classList.remove("hidden");
     } else {
       fileName.textContent = "";
