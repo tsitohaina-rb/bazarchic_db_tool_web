@@ -12,11 +12,11 @@ from html import unescape
 # Load environment variables
 load_dotenv()
 
-print(os.getenv('DB_HOST'))
-print(os.getenv('DB_USER'))
-print(os.getenv('DB_PASSWORD'))
-print(os.getenv('DB_NAME'))
-print(os.getenv('DB_PORT'))
+print("DB_HOST: ", os.getenv('DB_HOST'))
+print("DB_USER: ", os.getenv('DB_USER'))
+print("DB_PASSWORD: ", os.getenv('DB_PASSWORD'))
+print("DB_NAME: ", os.getenv('DB_NAME'))
+print("DB_PORT: ", os.getenv('DB_PORT'))
 
 def clean_html(text):
     """Remove HTML tags and decode HTML entities from text"""

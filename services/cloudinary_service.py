@@ -23,9 +23,9 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-print(os.getenv('CLOUDINARY_CLOUD_NAME'))
-print(os.getenv('CLOUDINARY_API_KEY'))
-print(os.getenv('CLOUDINARY_API_SECRET'))
+print("CLOUDINARY_CLOUD_NAME: ", os.getenv('CLOUDINARY_CLOUD_NAME'))
+print("CLOUDINARY_API_KEY: ", os.getenv('CLOUDINARY_API_KEY'))
+print("CLOUDINARY_API_SECRET: ", os.getenv('CLOUDINARY_API_SECRET'))
 
 
 class CloudinaryService:
