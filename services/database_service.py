@@ -36,16 +36,14 @@ class BazarchicDB:
         self.connect()
     
     def connect(self):
-        """Connect to MySQL database with timeout"""
+        """Connect to MySQL database"""
         try:
             self.connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST'),
                 user=os.getenv('DB_USER'),
                 password=os.getenv('DB_PASSWORD'),
                 database=os.getenv('DB_NAME'),
-                port=int(os.getenv('DB_PORT', 3306)),
-                connect_timeout=10,  # 10 seconds timeout
-                connection_timeout=10
+                port=int(os.getenv('DB_PORT', 3306))
             )
             
             if self.connection.is_connected():
@@ -53,11 +51,6 @@ class BazarchicDB:
                 return True
         except mysql.connector.Error as e:
             print(f"❌ Database connection failed: {e}")
-            self.connection = None
-            return False
-        except Exception as e:
-            print(f"❌ Unexpected error during database connection: {e}")
-            self.connection = None
             return False
     
     def close(self):

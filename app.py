@@ -32,13 +32,6 @@ app.register_blueprint(images_bp)
 app.register_blueprint(cloudinary_bp)
 
 
-# Health check endpoint for Render
-@app.route('/health')
-def health_check():
-    """Simple health check endpoint"""
-    return {'status': 'healthy', 'service': 'bazarchic-db-tool'}, 200
-
-
 # Error handlers
 @app.errorhandler(404)
 def not_found(e):
@@ -54,8 +47,7 @@ def server_error(e):
 
 if __name__ == '__main__':
     # For local development
-    port = int(os.getenv('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=5000)
 else:
-    # For production deployment (gunicorn)
+    # For production deployment
     app.config['DEBUG'] = False

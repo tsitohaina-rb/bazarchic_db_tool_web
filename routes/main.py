@@ -14,12 +14,6 @@ def index():
     """Home page with dashboard statistics"""
     try:
         db = BazarchicDB()
-        
-        # Check if database connection is available
-        if not db.connection or not db.connection.is_connected():
-            print("⚠️ Database connection not available, showing offline mode")
-            return render_template('index.html', stats=None, error="Database connection unavailable. Please check your database configuration.")
-        
         cursor = db.connection.cursor(dictionary=True)
         
         # Total products count
