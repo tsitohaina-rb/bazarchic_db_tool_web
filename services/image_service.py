@@ -21,18 +21,25 @@ class ImageExtractorService:
         self.connect()
     
     def connect(self):
-        """Connect to MySQL database"""
+        """Connect to MySQL database with timeout"""
         try:
             self.connection = mysql.connector.connect(
                 host=os.getenv('DB_HOST'),
                 user=os.getenv('DB_USER'),
                 password=os.getenv('DB_PASSWORD'),
                 database=os.getenv('DB_NAME'),
-                port=int(os.getenv('DB_PORT', 3306))
+                port=int(os.getenv('DB_PORT', 3306)),
+                connect_timeout=10,
+                connection_timeout=10
             )
             return self.connection.is_connected()
         except mysql.connector.Error as e:
             print(f"Database connection failed: {e}")
+            self.connection = None
+            return False
+        except Exception as e:
+            print(f"Unexpected error during database connection: {e}")
+            self.connection = None
             return False
     
     def close(self):

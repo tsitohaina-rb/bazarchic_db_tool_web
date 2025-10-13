@@ -30,13 +30,9 @@ Bazarchic DB Tool{% endblock %} {% block content %}
               type="radio"
               name="selection_method"
               value="dropdown"
-              {%
-              if
-              folders
-              and
-              folders|length
+              {% if folders and folders|length > 0 %}checked{% endif %}
+              class="peer sr-only"
             />
-            0 %}checked{% endif %} class="peer sr-only" />
             <div
               class="border-2 {% if folders and folders|length > 0 %}border-primary bg-blue-50{% else %}border-gray-300{% endif %} peer-checked:border-primary peer-checked:bg-blue-50 rounded-xl p-4 hover:bg-blue-100 transition-all duration-300 shadow-sm hover:shadow-md"
             >
@@ -57,9 +53,13 @@ Bazarchic DB Tool{% endblock %} {% block content %}
           </label>
 
           <label class="cursor-pointer">
-            <input type="radio" name="selection_method" value="manual" {% if not
-            folders or folders|length == 0 %}checked{% endif %} class="peer
-            sr-only" />
+            <input
+              type="radio"
+              name="selection_method"
+              value="manual"
+              {% if not folders or folders|length == 0 %}checked{% endif %}
+              class="peer sr-only"
+            />
             <div
               class="border-2 {% if not folders or folders|length == 0 %}border-primary bg-blue-50{% else %}border-gray-300{% endif %} peer-checked:border-primary peer-checked:bg-blue-50 rounded-xl p-4 hover:bg-blue-100 transition-all duration-300 shadow-sm hover:shadow-md"
             >
