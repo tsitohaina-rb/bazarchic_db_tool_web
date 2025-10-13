@@ -1,0 +1,483 @@
+{% extends "base.html" %} {% block title %}Search Products - Bazarchic DB Tool{%
+endblock %} {% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold text-gray-800">
+      <i class="fas fa-search text-orange-600 mr-2"></i
+      ><span id="pageTitle">Search Products by EAN</span>
+    </h1>
+    <p class="text-gray-600 mt-2" id="pageDescription">
+      Find products by EAN code (exact match) and export results
+    </p>
+  </div>
+
+  <!-- Search Form -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <form
+      method="POST"
+      action="{{ url_for('search.export') }}"
+      enctype="multipart/form-data"
+      id="searchForm"
+    >
+      <!-- Search Type Selection (EAN or REF) -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Search Type</label
+        >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_type"
+              value="ean"
+              checked
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-barcode text-primary text-2xl mr-3"></i>
+                <div>
+                  <p class="font-semibold text-gray-800">Search by EAN</p>
+                  <p class="text-xs text-gray-600 mt-1">Exact EAN code match</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_type"
+              value="ref"
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-hashtag text-primary text-2xl mr-3"></i>
+                <div>
+                  <p class="font-semibold text-gray-800">Search by REF</p>
+                  <p class="text-xs text-gray-600 mt-1">
+                    Partial reference match (LIKE)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Search Method Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Search Method</label
+        >
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_method"
+              value="single"
+              checked
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-blue-600 peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <i class="fas fa-search text-primary text-2xl mb-2 block"></i>
+                  <p class="font-semibold text-gray-800">Single Code</p>
+                  <p class="text-xs text-gray-600 mt-1">Search one code</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_method"
+              value="multiple"
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <i class="fas fa-list text-primary text-2xl mb-2 block"></i>
+                  <p class="font-semibold text-gray-800">Multiple EANs</p>
+                  <p class="text-xs text-gray-600 mt-1">Comma-separated list</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="search_method"
+              value="file"
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-lg p-4 hover:bg-gray-50 transition-all"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <i
+                    class="fas fa-file-upload text-primary text-2xl mb-2 block"
+                  ></i>
+                  <p class="font-semibold text-gray-800">Upload File</p>
+                  <p class="text-xs text-gray-600 mt-1">Text file with EANs</p>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Single Code Input -->
+      <div id="singleInput" class="search-input mb-6">
+        <label
+          class="block text-sm font-medium text-gray-700 mb-2"
+          id="singleLabel"
+          >Code</label
+        >
+        <input
+          type="text"
+          name="code"
+          id="singleCode"
+          placeholder="Enter code..."
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Multiple Codes Input -->
+      <div id="multipleInput" class="search-input hidden mb-6">
+        <label
+          class="block text-sm font-medium text-gray-700 mb-2"
+          id="multipleLabel"
+          >Codes (comma-separated)</label
+        >
+        <textarea
+          name="codes"
+          id="multipleCodes"
+          rows="4"
+          placeholder="Enter codes separated by commas..."
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+        ></textarea>
+        <p class="text-xs text-gray-500 mt-1" id="multipleExample">
+          Example: code1, code2, code3
+        </p>
+      </div>
+
+      <!-- File Upload Input -->
+      <div id="fileInput" class="search-input hidden mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2"
+          >Upload Text File</label
+        >
+        <div class="relative">
+          <input
+            type="file"
+            name="file"
+            accept=".txt,.csv"
+            id="fileUploadInput"
+            class="hidden"
+            onchange="updateFileName(this)"
+          />
+          <label
+            for="fileUploadInput"
+            class="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100 hover:border-primary transition-all duration-300 group"
+          >
+            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+              <div
+                class="mb-4 p-3 bg-white rounded-full shadow-md group-hover:shadow-lg transition-shadow duration-300"
+              >
+                <i
+                  class="fas fa-cloud-upload-alt text-3xl text-primary group-hover:text-blue-700 transition-colors duration-300"
+                ></i>
+              </div>
+              <p
+                class="mb-2 text-sm text-gray-600 group-hover:text-blue-700 transition-colors duration-300"
+              >
+                <span class="font-semibold">Click to upload</span> or drag and
+                drop
+              </p>
+              <p
+                class="text-xs text-gray-500 group-hover:text-primary transition-colors duration-300"
+                id="fileDescription"
+              >
+                Text file with one code per line
+              </p>
+              <div
+                class="mt-2 px-3 py-1 bg-blue-100 text-primary rounded-full text-xs font-medium group-hover:bg-blue-200 transition-colors duration-300"
+              >
+                .txt, .csv files
+              </div>
+            </div>
+          </label>
+        </div>
+        <p id="fileName" class="text-sm text-gray-600 mt-3 font-medium"></p>
+      </div>
+
+      <!-- Export Type -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2"
+          >Export Type</label
+        >
+        <select
+          name="export_type"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+        >
+          <option value="comprehensive">
+            Comprehensive (37 columns with detailed data)
+          </option>
+          <option value="basic">Basic (All database fields)</option>
+        </select>
+      </div>
+
+      <!-- Progress Display (Hidden by default) -->
+      <div id="progressContainer" class="hidden mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-blue-800">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+            </span>
+            <span class="text-sm text-blue-600" id="progressPercent">0%</span>
+          </div>
+          <div class="w-full bg-blue-200 rounded-full h-2.5 mb-2">
+            <div
+              class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              id="progressBar"
+              style="width: 0%"
+            ></div>
+          </div>
+          <div id="progressLog" class="mt-3 max-h-40 overflow-y-auto">
+            <p class="text-xs text-blue-700" id="progressMessage">
+              Initializing search...
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        id="submitBtn"
+        class="w-full bg-primary hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-none"
+      >
+        <i class="fas fa-search mr-3 text-lg" id="submitIcon"></i>
+        <span id="submitText" class="text-lg">Search and Export</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Search Info -->
+  <div
+    class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg shadow-md p-6 border border-blue-200"
+    id="infoPanel"
+  >
+    <h2 class="text-lg font-bold text-gray-800 mb-4">
+      <i class="fas fa-info-circle text-blue-600 mr-2"></i
+      ><span id="infoTitle">EAN Search Information</span>
+    </h2>
+    <div class="space-y-3 text-gray-700" id="infoContent">
+      <!-- Content will be dynamically updated -->
+    </div>
+  </div>
+</div>
+
+<script>
+  // Handle search type switching (EAN vs REF)
+  const searchTypeRadios = document.querySelectorAll(
+    'input[name="search_type"]'
+  );
+
+  function updateSearchTypeUI(searchType) {
+    const isEAN = searchType === "ean";
+    const typeName = isEAN ? "EAN" : "REF";
+    const typeNameLower = typeName.toLowerCase();
+
+    // Update page title and description
+    document.getElementById(
+      "pageTitle"
+    ).textContent = `Search Products by ${typeName}`;
+    document.getElementById("pageDescription").textContent = isEAN
+      ? "Find products by EAN code (exact match) and export results"
+      : "Find products by REF code (partial LIKE match) and export results";
+
+    // Update labels and placeholders
+    document.getElementById("singleLabel").textContent = `${typeName} Code`;
+    document.getElementById(
+      "singleCode"
+    ).placeholder = `Enter ${typeName} code...`;
+
+    document.getElementById(
+      "multipleLabel"
+    ).textContent = `${typeName} Codes (comma-separated)`;
+    document.getElementById(
+      "multipleCodes"
+    ).placeholder = `Enter ${typeName} codes separated by commas...`;
+    document.getElementById("multipleExample").textContent = isEAN
+      ? "Example: 1234567890123, 9876543210987, 5555555555555"
+      : "Example: ABC, DEF, XYZ123";
+
+    // Update file description
+    document.getElementById(
+      "fileDescription"
+    ).textContent = `Text file with one ${typeName} code per line`;
+
+    // Update info panel
+    document.getElementById(
+      "infoTitle"
+    ).textContent = `${typeName} Search Information`;
+
+    // Update info content
+    const infoContent = document.getElementById("infoContent");
+    infoContent.innerHTML = isEAN
+      ? `
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Exact Match:</strong> EAN code must match exactly (e.g., "3760123456789")</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Search Methods:</strong> Single EAN, multiple EANs (comma-separated), or upload text file</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Export Format:</strong> Creates 3 CSV files (ALL, FOUND, NOT FOUND) in ZIP</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Progress:</strong> Visual progress bar shows real-time search status</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Auto-cleanup:</strong> Temporary files deleted after download</span>
+            </p>
+        `
+      : `
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Partial Match:</strong> Uses LIKE pattern - "ABC" finds "ABC123", "PRODUCT_ABC", etc.</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Search Methods:</strong> Single REF, multiple REFs (comma-separated), or upload text file</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Export Format:</strong> Creates 3 CSV files (ALL, FOUND, NOT FOUND) in ZIP</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Progress:</strong> Visual progress bar shows real-time search status</span>
+            </p>
+            <p class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                <span><strong>Auto-cleanup:</strong> Temporary files deleted after download</span>
+            </p>
+        `;
+  }
+
+  // Initialize with EAN (default)
+  updateSearchTypeUI("ean");
+
+  searchTypeRadios.forEach((radio) => {
+    radio.addEventListener("change", function () {
+      updateSearchTypeUI(this.value);
+    });
+  });
+
+  // Handle search method switching
+  const radioButtons = document.querySelectorAll('input[name="search_method"]');
+  const searchInputs = {
+    single: document.getElementById("singleInput"),
+    multiple: document.getElementById("multipleInput"),
+    file: document.getElementById("fileInput"),
+  };
+
+  radioButtons.forEach((radio) => {
+    radio.addEventListener("change", function () {
+      // Hide all inputs
+      Object.values(searchInputs).forEach((input) =>
+        input.classList.add("hidden")
+      );
+      // Show selected input
+      searchInputs[this.value].classList.remove("hidden");
+    });
+  });
+
+  // Update file name display
+  function updateFileName(input) {
+    const fileName = document.getElementById("fileName");
+    if (input.files.length > 0) {
+      fileName.textContent = `Selected: ${input.files[0].name}`;
+    }
+  }
+
+  // Handle form submission with progress
+  const searchForm = document.getElementById("searchForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const submitIcon = document.getElementById("submitIcon");
+  const submitText = document.getElementById("submitText");
+  const progressContainer = document.getElementById("progressContainer");
+
+  searchForm.addEventListener("submit", function (e) {
+    // Disable button and show loading state
+    submitBtn.disabled = true;
+    submitIcon.className = "fas fa-spinner fa-spin mr-2";
+    submitText.textContent = "Processing...";
+
+    // Show progress container
+    progressContainer.classList.remove("hidden");
+
+    // Note: Actual progress will be tracked server-side
+    // For now, show indeterminate progress
+    updateProgress(10, "Connecting to database...");
+
+    setTimeout(() => updateProgress(30, "Searching products..."), 500);
+    setTimeout(() => updateProgress(60, "Generating CSV files..."), 1000);
+  });
+
+  function updateProgress(percent, message) {
+    document.getElementById("progressBar").style.width = percent + "%";
+    document.getElementById("progressPercent").textContent = percent + "%";
+
+    const progressLog = document.getElementById("progressLog");
+    const newMessage = document.createElement("p");
+    newMessage.className = "text-xs text-blue-700 mt-1";
+    newMessage.textContent = "• " + message;
+    progressLog.appendChild(newMessage);
+
+    // Auto-scroll to bottom
+    progressLog.scrollTop = progressLog.scrollHeight;
+  }
+
+  // Update file name display
+  function updateFileName(input) {
+    const fileName = document.getElementById("fileName");
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      fileName.innerHTML = `
+                <i class="fas fa-file-alt text-purple-600 mr-2"></i>
+                <span class="font-medium">${file.name}</span> 
+                <span class="text-gray-500">(${(file.size / 1024).toFixed(
+                  1
+                )} KB)</span>
+            `;
+      fileName.classList.remove("hidden");
+    } else {
+      fileName.textContent = "";
+      fileName.classList.add("hidden");
+    }
+  }
+</script>
+{% endblock %}

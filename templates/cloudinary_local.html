@@ -1,0 +1,238 @@
+{% extends "base.html" %} {% block title %}Local Upload to Cloudinary -
+Bazarchic DB Tool{% endblock %} {% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold text-gray-800">
+      <i class="fas fa-server text-cloudinary mr-2"></i>Upload Local Images to
+      Cloudinary
+    </h1>
+    <p class="text-gray-600 mt-2">
+      Upload images from your local server to Cloudinary with bulk processing
+    </p>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <form
+      method="POST"
+      action="{{ url_for('cloudinary.local_upload') }}"
+      id="localUploadForm"
+    >
+      <!-- Input Method Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Folder Input Method</label
+        >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="input_method"
+              value="manual"
+              checked
+              class="peer sr-only"
+            />
+            <div
+              class="border-2 border-primary peer-checked:border-primary peer-checked:bg-blue-50 bg-blue-50 rounded-xl p-4 hover:bg-blue-100 transition-all duration-300 shadow-sm hover:shadow-md"
+            >
+              <div class="flex items-center">
+                <div
+                  class="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg mr-3"
+                >
+                  <i class="fas fa-keyboard text-primary text-xl"></i>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">Manual Entry</p>
+                  <p class="text-sm text-gray-600 mt-1">Type folder path</p>
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="input_method"
+              value="browse"
+              class="peer sr-only"
+              disabled
+            />
+            <div
+              class="border-2 border-gray-300 peer-checked:border-primary peer-checked:bg-blue-50 rounded-xl p-4 opacity-50 cursor-not-allowed transition-all duration-300 shadow-sm"
+            >
+              <div class="flex items-center">
+                <div
+                  class="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mr-3"
+                >
+                  <i class="fas fa-folder-open text-gray-400 text-xl"></i>
+                </div>
+                <div>
+                  <p class="font-semibold text-gray-800">Browse Folders</p>
+                  <p class="text-sm text-gray-600 mt-1">Coming soon</p>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Folder Path Input -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2"
+          >Local Folder Path</label
+        >
+        <input
+          type="text"
+          name="folder_path"
+          id="folderPath"
+          required
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+          placeholder="e.g., /path/to/images or ./images"
+        />
+        <p class="text-sm text-gray-500 mt-2">
+          <i class="fas fa-info-circle mr-1"></i>
+          Enter the full path to the folder containing images on the server
+        </p>
+      </div>
+
+      <!-- Thread Count -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2"
+          >Concurrent Threads</label
+        >
+        <input
+          type="number"
+          name="max_workers"
+          value="10"
+          min="1"
+          max="20"
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+        />
+        <p class="text-sm text-gray-500 mt-2">
+          Number of concurrent upload threads (recommended: 5-15)
+        </p>
+      </div>
+
+      <!-- Cloudinary Folder Name -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2"
+          >Cloudinary Folder Name (Optional)</label
+        >
+        <input
+          type="text"
+          name="cloudinary_folder"
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+          placeholder="Leave empty to use default folder"
+        />
+        <p class="text-sm text-gray-500 mt-2">
+          Custom folder name in Cloudinary (default: bazarchic_images)
+        </p>
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        id="submitBtn"
+        class="w-full bg-primary hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-none"
+      >
+        <i class="fas fa-cloud-upload-alt mr-3 text-lg" id="submitIcon"></i>
+        <span id="submitText" class="text-lg">Start Upload</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Progress Container (Hidden by default) -->
+  <div id="progressContainer" class="bg-white rounded-lg shadow-md p-6 hidden">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">
+      <i class="fas fa-spinner fa-spin text-blue-600 mr-2"></i>Upload Progress
+    </h2>
+    <div class="mb-4">
+      <div class="flex justify-between text-sm text-gray-600 mb-2">
+        <span>Progress</span>
+        <span id="progressPercentage">0%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-4">
+        <div
+          id="progressBar"
+          class="bg-gradient-to-r from-blue-600 to-cyan-600 h-4 rounded-full transition-all duration-300"
+          style="width: 0%"
+        ></div>
+      </div>
+    </div>
+    <div
+      id="progressLog"
+      class="bg-gray-50 rounded-lg p-4 max-h-60 overflow-y-auto"
+    >
+      <p class="text-sm text-gray-600">Initializing upload...</p>
+    </div>
+  </div>
+
+  <!-- Info Panel -->
+  <div
+    class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg shadow-md p-6 border border-cyan-200"
+  >
+    <h2 class="text-lg font-bold text-gray-800 mb-4">
+      <i class="fas fa-info-circle text-cyan-600 mr-2"></i>How It Works
+    </h2>
+    <div class="space-y-3 text-gray-700">
+      <p class="flex items-start">
+        <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+        <span
+          ><strong>Local Folder:</strong> Upload images from a folder on the
+          server filesystem</span
+        >
+      </p>
+      <p class="flex items-start">
+        <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+        <span
+          ><strong>Multi-threaded:</strong> Uses concurrent threads for faster
+          batch uploads</span
+        >
+      </p>
+      <p class="flex items-start">
+        <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+        <span
+          ><strong>Supported Formats:</strong> JPG, JPEG, PNG, GIF, BMP, WEBP,
+          SVG</span
+        >
+      </p>
+      <p class="flex items-start">
+        <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+        <span
+          ><strong>CSV Export:</strong> Downloads a CSV file with filenames and
+          Cloudinary URLs</span
+        >
+      </p>
+      <p class="flex items-start">
+        <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+        <span
+          ><strong>Progress Tracking:</strong> Real-time updates on upload
+          status</span
+        >
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("localUploadForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const submitIcon = document.getElementById("submitIcon");
+  const submitText = document.getElementById("submitText");
+  const progressContainer = document.getElementById("progressContainer");
+
+  form.addEventListener("submit", function (e) {
+    // Show progress container
+    progressContainer.classList.remove("hidden");
+
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitIcon.className = "fas fa-spinner fa-spin mr-2";
+    submitText.textContent = "Uploading...";
+
+    // Scroll to progress container
+    progressContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+</script>
+{% endblock %}
