@@ -23,10 +23,6 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-print("CLOUDINARY_CLOUD_NAME: ", os.getenv('CLOUDINARY_CLOUD_NAME'))
-print("CLOUDINARY_API_KEY: ", os.getenv('CLOUDINARY_API_KEY'))
-print("CLOUDINARY_API_SECRET: ", os.getenv('CLOUDINARY_API_SECRET'))
-
 
 class CloudinaryService:
     """Service for uploading images to Cloudinary"""
@@ -235,29 +231,67 @@ class CloudinaryService:
             print(f"Dropbox error: {e}")
             return []
     
-    def list_dropbox_folders(self) -> List[str]:
-        """List all folders in Dropbox account"""
+    def list_dropbox_folders(self, include_subdirs=True) -> List[str]:
+        """
+        List all folders in Dropbox account
+        
+        Args:
+            include_subdirs: If True, lists all subdirectories recursively
+        
+        Returns:
+            Sorted list of all folder paths
+        """
         try:
             dbx = dropbox.Dropbox(os.getenv('DROPBOX_TOKEN'))
+            all_folders = []
             
-            folders = []
-            result = dbx.files_list_folder('')
+            def scan_folder(folder_path=''):
+                """Recursively scan folders starting from folder_path"""
+                try:
+                    # List folder contents (non-recursive API call)
+                    result = dbx.files_list_folder(
+                        path=folder_path,
+                        recursive=False,  # We handle recursion manually
+                        include_deleted=False
+                    )
+                    
+                    folders_to_scan = []
+                    
+                    # Process entries
+                    for entry in result.entries:
+                        if isinstance(entry, dropbox.files.FolderMetadata):
+                            all_folders.append(entry.path_display)
+                            if include_subdirs:
+                                folders_to_scan.append(entry.path_display)
+                    
+                    # Handle pagination
+                    while result.has_more:
+                        result = dbx.files_list_folder_continue(result.cursor)
+                        for entry in result.entries:
+                            if isinstance(entry, dropbox.files.FolderMetadata):
+                                all_folders.append(entry.path_display)
+                                if include_subdirs:
+                                    folders_to_scan.append(entry.path_display)
+                    
+                    # Recursively scan subfolders
+                    if include_subdirs:
+                        for subfolder in folders_to_scan:
+                            scan_folder(subfolder)
+                            
+                except Exception as e:
+                    print(f"⚠️  Error listing folder '{folder_path}': {e}")
             
-            for entry in result.entries:
-                if isinstance(entry, dropbox.files.FolderMetadata):
-                    folders.append(entry.path_display)
+            # Start scanning from root
+            scan_folder('')
             
-            # Handle pagination
-            while result.has_more:
-                result = dbx.files_list_folder_continue(result.cursor)
-                for entry in result.entries:
-                    if isinstance(entry, dropbox.files.FolderMetadata):
-                        folders.append(entry.path_display)
+            print(f"📁 Found {len(all_folders)} folders in Dropbox (including subdirectories)")
             
-            return sorted(folders)
+            return sorted(all_folders)
             
         except Exception as e:
-            print(f"Error listing Dropbox folders: {e}")
+            print(f"❌ Error listing Dropbox folders: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def _upload_single_file(self, file_path: str, cloudinary_folder: str) -> Dict:

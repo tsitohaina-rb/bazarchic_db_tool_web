@@ -5,6 +5,7 @@ Extract product image URLs by EAN or REF codes
 
 import os
 import csv
+import tempfile
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 import mysql.connector
@@ -171,12 +172,15 @@ class ImageExtractorService:
                 images_list = self.get_images_by_ref(clean_codes)
                 images_data = {row['ref']: row for row in images_list}
             
-            # Generate filenames
+            # Generate filenames in temporary directory
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = filename.replace('.csv', '') if filename else f"images_by_{search_type}"
-            file_all = f"{base_name}_ALL_{timestamp}.csv"
-            file_found = f"{base_name}_FOUND_{timestamp}.csv"
-            file_not_found = f"{base_name}_NOT_FOUND_{timestamp}.csv"
+            
+            # Create temporary files
+            temp_dir = tempfile.gettempdir()
+            file_all = os.path.join(temp_dir, f"{base_name}_ALL_{timestamp}.csv")
+            file_found = os.path.join(temp_dir, f"{base_name}_FOUND_{timestamp}.csv")
+            file_not_found = os.path.join(temp_dir, f"{base_name}_NOT_FOUND_{timestamp}.csv")
             
             # Headers
             if search_type == 'ean':

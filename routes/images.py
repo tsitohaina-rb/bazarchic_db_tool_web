@@ -5,6 +5,7 @@ Extract product image URLs by EAN or REF
 
 import os
 import shutil
+import tempfile
 from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
@@ -72,12 +73,11 @@ def extractor_export():
         extractor.close()
         
         if file_all and file_found and file_not_found:
-            # Create export directory
+            # Create temporary export directory
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            export_dir = os.path.join('exports', f"images_{search_type}_{timestamp}")
-            os.makedirs(export_dir, exist_ok=True)
+            export_dir = tempfile.mkdtemp(prefix=f'images_{search_type}_{timestamp}_')
             
-            # Move files to export directory
+            # Move files to temporary export directory
             final_all = os.path.join(export_dir, os.path.basename(file_all))
             final_found = os.path.join(export_dir, os.path.basename(file_found))
             final_not_found = os.path.join(export_dir, os.path.basename(file_not_found))
@@ -86,11 +86,15 @@ def extractor_export():
             shutil.move(file_found, final_found)
             shutil.move(file_not_found, final_not_found)
             
-            # Create ZIP file
-            zip_filename = f"{export_dir}.zip"
-            shutil.make_archive(export_dir, 'zip', export_dir)
+            # Create ZIP file in temporary location
+            temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+            temp_zip.close()
+            zip_path = temp_zip.name
             
-            # Clean up directory
+            # Create archive
+            shutil.make_archive(zip_path.replace('.zip', ''), 'zip', export_dir)
+            
+            # Clean up directory immediately
             try:
                 shutil.rmtree(export_dir)
             except:
@@ -99,15 +103,15 @@ def extractor_export():
             flash(f'Image URLs extracted successfully!', 'success')
             
             # Send ZIP file
-            response = send_file(zip_filename, as_attachment=True, 
+            response = send_file(zip_path, as_attachment=True, 
                                download_name=f"images_{search_type}_{timestamp}.zip")
             
             # Clean up ZIP after sending
             @response.call_on_close
             def cleanup_zip():
                 try:
-                    if os.path.exists(zip_filename):
-                        os.remove(zip_filename)
+                    if os.path.exists(zip_path):
+                        os.remove(zip_path)
                 except:
                     pass
             

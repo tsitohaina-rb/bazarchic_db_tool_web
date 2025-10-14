@@ -5,6 +5,7 @@ Search and export products by EAN or REF
 
 import os
 import shutil
+import tempfile
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from services.database_service import BazarchicDB
@@ -83,11 +84,15 @@ def export():
                 counts = result[1]
                 found_count, not_found_count, total_exported = counts
                 
-                # Create ZIP file
-                zip_filename = f"{export_dir}.zip"
-                shutil.make_archive(export_dir, 'zip', export_dir)
+                # Create ZIP file in temporary location
+                temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+                temp_zip.close()
+                zip_path = temp_zip.name
                 
-                # Clean up directory
+                # Create archive
+                shutil.make_archive(zip_path.replace('.zip', ''), 'zip', export_dir)
+                
+                # Clean up directory immediately
                 try:
                     shutil.rmtree(export_dir)
                 except Exception as e:
@@ -96,14 +101,15 @@ def export():
                 flash(f'Export completed! Found: {found_count}, Not found: {not_found_count}, Total products: {total_exported}', 'success')
                 
                 # Send ZIP file
-                response = send_file(zip_filename, as_attachment=True, 
-                                   download_name=f"export_{os.path.basename(export_dir)}.zip")
+                timestamp = os.path.basename(export_dir)
+                response = send_file(zip_path, as_attachment=True, 
+                                   download_name=f"export_{timestamp}.zip")
                 
                 @response.call_on_close
                 def cleanup_zip():
                     try:
-                        if os.path.exists(zip_filename):
-                            os.remove(zip_filename)
+                        if os.path.exists(zip_path):
+                            os.remove(zip_path)
                     except:
                         pass
                 

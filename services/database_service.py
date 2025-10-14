@@ -5,18 +5,13 @@ Bazarchic Database Connection and Operations
 import mysql.connector
 from dotenv import load_dotenv
 import os
+import tempfile
 from datetime import datetime
 import re
 from html import unescape
 
 # Load environment variables
 load_dotenv()
-
-print("DB_HOST: ", os.getenv('DB_HOST'))
-print("DB_USER: ", os.getenv('DB_USER'))
-print("DB_PASSWORD: ", os.getenv('DB_PASSWORD'))
-print("DB_NAME: ", os.getenv('DB_NAME'))
-print("DB_PORT: ", os.getenv('DB_PORT'))
 
 def clean_html(text):
     """Remove HTML tags and decode HTML entities from text"""
@@ -480,8 +475,8 @@ class BazarchicDB:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
             if (ean_filter or ref_filter) and clean_codes:
-                export_dir = os.path.join('exports', timestamp)
-                os.makedirs(export_dir, exist_ok=True)
+                # Use temporary directory for online app
+                export_dir = tempfile.mkdtemp(prefix=f'export_{timestamp}_')
                 
                 filename_all = os.path.join(export_dir, f"ALL_products.csv")
                 filename_found = os.path.join(export_dir, f"FOUND_products.csv")

@@ -18,7 +18,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Ensure required folders exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs('exports', exist_ok=True)
+# Note: exports now use temporary files, no need for exports directory
 
 # Import and register blueprints
 from routes.main import main_bp

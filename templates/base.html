@@ -40,19 +40,19 @@
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
               <a
                 href="{{ url_for('main.index') }}"
-                class="{% if request.endpoint == 'main.index' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="{% if request.endpoint and request.endpoint == 'main.index' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 <i class="fas fa-home mr-2"></i> Dashboard
               </a>
               <a
                 href="{{ url_for('search.index') }}"
-                class="{% if request.endpoint == 'search.index' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="{% if request.endpoint and request.endpoint == 'search.index' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 <i class="fas fa-search mr-2"></i> Search & Export
               </a>
               <a
                 href="{{ url_for('images.extractor') }}"
-                class="{% if request.endpoint == 'images.extractor' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="{% if request.endpoint and request.endpoint == 'images.extractor' %}border-primary text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 <i class="fas fa-images mr-2"></i> Image URLs
               </a>
@@ -61,7 +61,7 @@
               <div class="relative items-center flex">
                 <button
                   id="cloudinary-dropdown-btn"
-                  class="{% if 'cloudinary' in request.endpoint %}border-primary h-full text-gray-900{% else %}border-transparent text-gray-500 h-full hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
+                  class="{% if request.endpoint and 'cloudinary' in request.endpoint %}border-primary h-full text-gray-900{% else %}border-transparent text-gray-500 h-full hover:border-gray-300 hover:text-gray-700{% endif %} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
                   aria-expanded="false"
                   aria-haspopup="true"
                 >
@@ -95,7 +95,7 @@
                     </div>
                     <a
                       href="{{ url_for('cloudinary.local') }}"
-                      class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-150 {% if request.endpoint == 'cloudinary.local' %}bg-blue-50 text-primary border-l-4 border-primary{% endif %}"
+                      class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-150 {% if request.endpoint and request.endpoint == 'cloudinary.local' %}bg-blue-50 text-primary border-l-4 border-primary{% endif %}"
                     >
                       <div
                         class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mr-3 shadow-sm"
@@ -111,7 +111,7 @@
                     </a>
                     <a
                       href="{{ url_for('cloudinary.dropbox') }}"
-                      class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-150 {% if request.endpoint == 'cloudinary.dropbox' %}bg-blue-50 text-primary border-l-4 border-primary{% endif %}"
+                      class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-150 {% if request.endpoint and request.endpoint == 'cloudinary.dropbox' %}bg-blue-50 text-primary border-l-4 border-primary{% endif %}"
                     >
                       <div
                         class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mr-3 shadow-sm"
@@ -182,19 +182,19 @@
         <div class="pt-2 pb-3 space-y-1 bg-gray-50">
           <a
             href="{{ url_for('main.index') }}"
-            class="{% if request.endpoint == 'main.index' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
+            class="{% if request.endpoint and request.endpoint == 'main.index' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
           >
             <i class="fas fa-home mr-3 w-5"></i> Dashboard
           </a>
           <a
             href="{{ url_for('search.index') }}"
-            class="{% if request.endpoint == 'search.index' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
+            class="{% if request.endpoint and request.endpoint == 'search.index' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
           >
             <i class="fas fa-search mr-3 w-5"></i> Search & Export
           </a>
           <a
             href="{{ url_for('images.extractor') }}"
-            class="{% if request.endpoint == 'images.extractor' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
+            class="{% if request.endpoint and request.endpoint == 'images.extractor' %}bg-primary text-white border-l-4 border-primary{% else %}text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent{% endif %} block pl-3 pr-4 py-3 text-base font-medium transition-all duration-200"
           >
             <i class="fas fa-images mr-3 w-5"></i> Image URLs
           </a>
@@ -208,13 +208,13 @@
           </div>
           <a
             href="{{ url_for('cloudinary.local') }}"
-            class="{% if request.endpoint == 'cloudinary.local' %}bg-blue-50 text-primary border-l-4 border-primary{% else %}text-gray-700 hover:bg-blue-50 hover:text-primary border-l-4 border-transparent{% endif %} block pl-6 pr-4 py-3 text-base font-medium transition-all duration-200"
+            class="{% if request.endpoint and request.endpoint == 'cloudinary.local' %}bg-blue-50 text-primary border-l-4 border-primary{% else %}text-gray-700 hover:bg-blue-50 hover:text-primary border-l-4 border-transparent{% endif %} block pl-6 pr-4 py-3 text-base font-medium transition-all duration-200"
           >
             <i class="fas fa-server mr-3 w-5"></i> Local Server
           </a>
           <a
             href="{{ url_for('cloudinary.dropbox') }}"
-            class="{% if request.endpoint == 'cloudinary.dropbox' %}bg-blue-50 text-primary border-l-4 border-primary{% else %}text-gray-700 hover:bg-blue-50 hover:text-primary border-l-4 border-transparent{% endif %} block pl-6 pr-4 py-3 text-base font-medium transition-all duration-200"
+            class="{% if request.endpoint and request.endpoint == 'cloudinary.dropbox' %}bg-blue-50 text-primary border-l-4 border-primary{% else %}text-gray-700 hover:bg-blue-50 hover:text-primary border-l-4 border-transparent{% endif %} block pl-6 pr-4 py-3 text-base font-medium transition-all duration-200"
           >
             <i class="fab fa-dropbox mr-3 w-5"></i> Dropbox Cloud
           </a>
@@ -272,7 +272,9 @@
         const dropdownMenu = document.getElementById(
           "cloudinary-dropdown-menu"
         );
-        const dropdownIcon = document.getElementById("cloudinary-dropdown-icon");
+        const dropdownIcon = document.getElementById(
+          "cloudinary-dropdown-icon"
+        );
 
         if (dropdownBtn && dropdownMenu) {
           // Toggle dropdown on click

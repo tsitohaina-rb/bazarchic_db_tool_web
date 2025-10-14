@@ -4,7 +4,9 @@ Upload images from local storage or Dropbox to Cloudinary
 """
 
 import os
+import tempfile
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, jsonify
+from werkzeug.utils import secure_filename
 from services.cloudinary_service import CloudinaryService
 
 cloudinary_bp = Blueprint('cloudinary', __name__, url_prefix='/cloudinary')
@@ -18,43 +20,71 @@ def local():
 
 @cloudinary_bp.route('/local/upload', methods=['POST'])
 def local_upload():
-    """Upload images from local folder to Cloudinary"""
+    """Upload images from uploaded files to Cloudinary"""
+    temp_dir = None
     try:
-        folder_path = request.form.get('folder_path', '').strip()
         max_workers = int(request.form.get('max_workers', 10))
         cloudinary_folder = request.form.get('cloudinary_folder', 'bazarchic_images').strip()
         
-        if not folder_path:
-            flash('Please provide a folder path', 'error')
+        # Handle file uploads
+        if 'files' not in request.files:
+            flash('No files uploaded', 'error')
             return redirect(url_for('cloudinary.local'))
         
-        if not os.path.exists(folder_path):
-            flash(f'Folder does not exist: {folder_path}', 'error')
+        files = request.files.getlist('files')
+        
+        if not files or files[0].filename == '':
+            flash('No files selected', 'error')
             return redirect(url_for('cloudinary.local'))
         
-        # Upload using service
+        # Create temporary directory for uploaded files
+        temp_dir = tempfile.mkdtemp(prefix='cloudinary_upload_')
+        
+        # Save uploaded files to temporary directory
+        saved_count = 0
+        for file in files:
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(temp_dir, filename))
+                saved_count += 1
+        
+        print(f"✅ Saved {saved_count} files to temporary directory: {temp_dir}")
+        
+        # Upload from temporary directory
         service = CloudinaryService()
-        results = service.upload_from_local(folder_path, cloudinary_folder, max_workers)
+        results = service.upload_from_local(temp_dir, cloudinary_folder, max_workers)
         
         if results:
-            # Save to CSV
-            output_csv = f"cloudinary_local_upload_{os.path.basename(folder_path)}.csv"
+            # Save to CSV in temporary location
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            temp_csv = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv', 
+                                                   prefix=f'cloudinary_upload_{timestamp}_')
+            output_csv = temp_csv.name
+            temp_csv.close()
+            
             service.save_results_to_csv(results, output_csv)
             
             successful = sum(1 for r in results if r['status'] == 'success')
-            flash(f'Upload completed! {successful}/{len(results)} images uploaded', 'success')
+            failed = sum(1 for r in results if r['status'] == 'failed')
+            flash(f'Upload completed! ✅ Success: {successful} | ❌ Failed: {failed}', 'success')
             
             # Send CSV file
             if os.path.exists(output_csv):
-                response = send_file(output_csv, as_attachment=True)
+                response = send_file(output_csv, as_attachment=True,
+                                   download_name=f'cloudinary_upload_{timestamp}.csv')
                 
                 @response.call_on_close
                 def cleanup():
                     try:
                         if os.path.exists(output_csv):
                             os.remove(output_csv)
-                    except:
-                        pass
+                        if temp_dir and os.path.exists(temp_dir):
+                            import shutil
+                            shutil.rmtree(temp_dir)
+                            print(f"🧹 Cleaned up temporary directory: {temp_dir}")
+                    except Exception as e:
+                        print(f"⚠️ Cleanup warning: {e}")
                 
                 return response
         
@@ -65,6 +95,15 @@ def local_upload():
         flash(f'Upload error: {str(e)}', 'error')
         import traceback
         traceback.print_exc()
+        
+        # Cleanup on error
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                import shutil
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+        
         return redirect(url_for('cloudinary.local'))
 
 
@@ -127,9 +166,13 @@ def dropbox_upload():
         results = service.upload_from_dropbox(dropbox_path, max_workers)
         
         if results:
-            # Save to CSV
+            # Save to CSV in temporary location
             folder_name = os.path.basename(dropbox_path.rstrip('/'))
-            output_csv = f"cloudinary_dropbox_upload_{folder_name}.csv"
+            temp_csv = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv',
+                                                   prefix=f'cloudinary_dropbox_{folder_name}_')
+            output_csv = temp_csv.name
+            temp_csv.close()
+            
             service.save_results_to_csv(results, output_csv)
             
             successful = sum(1 for r in results if r['status'] == 'success')
@@ -137,7 +180,8 @@ def dropbox_upload():
             
             # Send CSV file
             if os.path.exists(output_csv):
-                response = send_file(output_csv, as_attachment=True)
+                response = send_file(output_csv, as_attachment=True,
+                                   download_name=f'cloudinary_dropbox_{folder_name}.csv')
                 
                 @response.call_on_close
                 def cleanup():
