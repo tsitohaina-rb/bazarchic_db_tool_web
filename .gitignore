@@ -269,3 +269,6 @@ node_modules/
 
 # Bazarchic Database Tool specific
 IMPROVEMENTS_SUMMARY.md
+bazarshop_base_backup_20251015_100125.sql
+download_cloudinary_urls.py
+dump.py

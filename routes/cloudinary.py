@@ -1,10 +1,12 @@
 """
 Cloudinary Upload Routes Blueprint
 Upload images from local storage or Dropbox to Cloudinary
+Also handle downloading URLs from Cloudinary folders
 """
 
 import os
 import tempfile
+from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, jsonify
 from werkzeug.utils import secure_filename
 from services.cloudinary_service import CloudinaryService
@@ -201,3 +203,127 @@ def dropbox_upload():
         import traceback
         traceback.print_exc()
         return redirect(url_for('cloudinary.dropbox'))
+
+
+@cloudinary_bp.route('/download-urls')
+def download_urls():
+    """Download URLs page"""
+    return render_template('cloudinary_download_urls.html')
+
+
+@cloudinary_bp.route('/api/folders')
+def api_get_folders():
+    """API endpoint to get folder structure"""
+    try:
+        print("🔄 Starting folder discovery...")
+        service = CloudinaryService()
+        folder_structure = service.get_folder_structure()
+        
+        print(f"📂 Raw folder structure discovered: {len(folder_structure)} main folders")
+        for main, subs in folder_structure.items():
+            print(f"   • {main}: {len(subs)} subfolders")
+        
+        # Convert to format suitable for select options with better hierarchy
+        folders = []
+        
+        # Sort main folders alphabetically
+        sorted_main_folders = sorted(folder_structure.keys())
+        
+        for main_folder in sorted_main_folders:
+            subfolders = folder_structure[main_folder]
+            
+            # Add main folder
+            folders.append({
+                'value': main_folder,
+                'label': f"📁 {main_folder}",
+                'type': 'main'
+            })
+            
+            # Add all subfolders with proper indentation
+            for subfolder in sorted(subfolders):
+                # Calculate depth based on number of slashes
+                depth = subfolder.count('/')
+                indent = "  " * depth
+                
+                # Get the last part of the path for display
+                display_name = subfolder.split('/')[-1] if '/' in subfolder else subfolder
+                
+                folders.append({
+                    'value': subfolder,
+                    'label': f"{indent}└─ {display_name}",
+                    'type': 'sub',
+                    'depth': depth,
+                    'full_path': subfolder
+                })
+        
+        print(f"📋 Prepared {len(folders)} folder options for dropdown")
+        
+        return jsonify({
+            'success': True,
+            'folders': folders,
+            'total_folders': len(folders)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@cloudinary_bp.route('/download-urls/export', methods=['POST'])
+def export_urls():
+    """Export URLs from selected folder to CSV"""
+    try:
+        folder_name = request.form.get('folder_name', '').strip()
+        max_results = int(request.form.get('max_results', 500))
+        use_search_api = request.form.get('use_search_api') == 'on'
+        
+        if not folder_name:
+            flash('Please select a folder', 'error')
+            return redirect(url_for('cloudinary.download_urls'))
+        
+        service = CloudinaryService()
+        
+        # Get images from folder
+        images = service.get_images_from_folder(
+            folder_name=folder_name,
+            max_results=max_results,
+            use_search_api=use_search_api
+        )
+        
+        if not images:
+            flash(f'No images found in folder "{folder_name}"', 'warning')
+            return redirect(url_for('cloudinary.download_urls'))
+        
+        # Export to CSV
+        csv_path = service.export_urls_to_csv(images, folder_name)
+        
+        # Generate download filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        download_filename = f"{folder_name.replace('/', '_')}_URLs_{timestamp}.csv"
+        
+        # Send file with cleanup
+        response = send_file(
+            csv_path,
+            as_attachment=True,
+            download_name=download_filename,
+            mimetype='text/csv'
+        )
+        
+        @response.call_on_close
+        def cleanup():
+            try:
+                if os.path.exists(csv_path):
+                    os.remove(csv_path)
+            except:
+                pass
+        
+        flash(f'Successfully exported {len(images)} image URLs from "{folder_name}"', 'success')
+        return response
+        
+    except Exception as e:
+        flash(f'Export error: {str(e)}', 'error')
+        import traceback
+        traceback.print_exc()
+        return redirect(url_for('cloudinary.download_urls'))

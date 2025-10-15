@@ -1,16 +1,21 @@
 """
 Cloudinary Upload Service
 Handle image uploads from local storage and Dropbox to Cloudinary
+Also handle downloading URLs from Cloudinary folders
 """
 
 import os
 import csv
+import tempfile
 from pathlib import Path
 from typing import List, Dict, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
+from datetime import datetime
 import cloudinary
+import cloudinary.api
 import cloudinary.uploader
+from cloudinary import Search
 import dropbox
 from dotenv import load_dotenv
 
@@ -376,3 +381,306 @@ class CloudinaryService:
                 ])
         
         print(f"Results saved to: {output_file}")
+
+    def list_cloudinary_folders(self, max_pages: int = 50) -> List[str]:
+        """
+        List all folders in Cloudinary by scanning resources
+        
+        Args:
+            max_pages: Safety cap on pagination loops
+            
+        Returns:
+            Sorted list of discovered folder names
+        """
+        discovered = set()
+        
+        try:
+            # Try root_folders API first
+            try:
+                root = cloudinary.api.root_folders()
+                for f in root.get('folders', []):
+                    name = f.get('name')
+                    if name:
+                        discovered.add(name)
+            except Exception:
+                pass  # root_folders not available on all plans
+            
+            # Scan resources for folder prefixes
+            next_cursor = None
+            page = 0
+            
+            while True:
+                page += 1
+                if page > max_pages:
+                    break
+                    
+                if next_cursor:
+                    resp = cloudinary.api.resources(
+                        type='upload',
+                        max_results=500,
+                        next_cursor=next_cursor
+                    )
+                else:
+                    resp = cloudinary.api.resources(
+                        type='upload',
+                        max_results=500
+                    )
+                
+                resources = resp.get('resources', [])
+                for r in resources:
+                    public_id = r.get('public_id', '')
+                    if '/' in public_id:
+                        prefix = public_id.split('/')[0]
+                        if prefix:
+                            discovered.add(prefix)
+                
+                next_cursor = resp.get('next_cursor')
+                if not next_cursor:
+                    break
+                    
+        except Exception as e:
+            print(f"Error scanning folders: {e}")
+        
+        return sorted(discovered)
+    
+    def get_folder_structure(self, max_pages: int = 100) -> Dict[str, List[str]]:
+        """
+        Comprehensively get all folder structure including deep subfolders
+        Using the same method as the original download_cloudinary_urls.py script
+        
+        Returns:
+            Dictionary with main folders as keys and all paths as values
+        """
+        folder_structure = {}
+        discovered_paths = set()
+        
+        print("📂 Discovering folders in your Cloudinary account...")
+        
+        try:
+            # Try root_folders API first (may not be enabled on all accounts/plans)
+            try:
+                root = cloudinary.api.root_folders()
+                for f in root.get('folders', []):
+                    name = f.get('name')
+                    if name:
+                        discovered_paths.add(name)
+                        print(f"   • root folder: {name}")
+            except Exception as e:
+                print(f"   ⚠️  root_folders not available: {e}")
+
+            # Comprehensive scan using paginated resources API
+            print("🔍 Scanning all resources for folder prefixes...")
+            next_cursor = None
+            page = 0
+            total_resources_scanned = 0
+            
+            while True:
+                page += 1
+                if page > max_pages:
+                    print(f"   ⚠️  Stopping after {max_pages} pages (safety cap)")
+                    break
+                
+                try:
+                    if next_cursor:
+                        resp = cloudinary.api.resources(
+                            type='upload',
+                            max_results=500,
+                            next_cursor=next_cursor
+                        )
+                    else:
+                        resp = cloudinary.api.resources(
+                            type='upload', 
+                            max_results=500
+                        )
+                    
+                    resources = resp.get('resources', [])
+                    total_resources_scanned += len(resources)
+                    print(f"   Page {page}: {len(resources)} resources (Total scanned: {total_resources_scanned})")
+                    
+                    for r in resources:
+                        public_id = r.get('public_id', '')
+                        if '/' in public_id:
+                            # Extract all folder levels from the public_id
+                            parts = public_id.split('/')
+                            # Add all possible folder paths
+                            for i in range(1, len(parts)):
+                                folder_path = '/'.join(parts[:i])
+                                if folder_path:
+                                    discovered_paths.add(folder_path)
+                    
+                    next_cursor = resp.get('next_cursor')
+                    if not next_cursor:
+                        print(f"   ✅ Completed scan - no more pages")
+                        break
+                        
+                except Exception as e:
+                    print(f"   ⚠️  Resource scan page {page} interrupted: {e}")
+                    break
+            
+            print(f"📊 Total unique folder paths discovered: {len(discovered_paths)}")
+            
+            # Organize into hierarchical structure
+            all_folders = sorted(discovered_paths)
+            
+            for path in all_folders:
+                parts = path.split('/')
+                main_folder = parts[0]
+                
+                if main_folder not in folder_structure:
+                    folder_structure[main_folder] = []
+                
+                # Add the full path (including main folder itself and all subfolders)
+                if path not in folder_structure[main_folder] and path != main_folder:
+                    folder_structure[main_folder].append(path)
+            
+            # Sort subfolders for each main folder
+            for main_folder in folder_structure:
+                folder_structure[main_folder].sort()
+            
+            # Also add main folders that don't have subfolders
+            for path in all_folders:
+                if '/' not in path and path not in folder_structure:
+                    folder_structure[path] = []
+            
+            print(f"📁 Organized into {len(folder_structure)} main folders")
+            for main_folder, subfolders in folder_structure.items():
+                print(f"   • {main_folder} ({len(subfolders)} subfolders)")
+                
+        except Exception as e:
+            print(f"❌ Error getting folder structure: {e}")
+        
+        return folder_structure
+    
+    def get_images_from_folder(self, folder_name: str, max_results: int = 500, use_search_api: bool = False) -> List[Dict]:
+        """
+        Retrieve all images from a specific Cloudinary folder
+        
+        Args:
+            folder_name: Name of the Cloudinary folder
+            max_results: Maximum number of results to retrieve
+            use_search_api: Whether to use Search API instead of resources API
+            
+        Returns:
+            List of image resources
+        """
+        if use_search_api:
+            return self._get_images_search_api(folder_name, max_results)
+        else:
+            return self._get_images_resources_api(folder_name, max_results)
+    
+    def _get_images_resources_api(self, folder_name: str, max_results: int) -> List[Dict]:
+        """Get images using the resources API"""
+        all_resources = []
+        next_cursor = None
+        
+        try:
+            while True:
+                if next_cursor:
+                    result = cloudinary.api.resources(
+                        type='upload',
+                        prefix=folder_name,
+                        max_results=min(max_results, 500),
+                        next_cursor=next_cursor
+                    )
+                else:
+                    result = cloudinary.api.resources(
+                        type='upload',
+                        prefix=folder_name,
+                        max_results=min(max_results, 500)
+                    )
+                
+                resources = result.get('resources', [])
+                all_resources.extend(resources)
+                
+                next_cursor = result.get('next_cursor')
+                if not next_cursor or len(all_resources) >= max_results:
+                    break
+            
+            return all_resources[:max_results]
+            
+        except Exception as e:
+            print(f"Error retrieving images: {e}")
+            return []
+    
+    def _get_images_search_api(self, folder_name: str, max_results: int) -> List[Dict]:
+        """Get images using the Search API"""
+        expression = f'folder="{folder_name}"'
+        search = Search().expression(expression).max_results(500)
+        all_resources = []
+        
+        try:
+            data = search.execute()
+            batch = data.get('resources', [])
+            all_resources.extend(batch)
+            
+            while 'next_cursor' in data:
+                if max_results != -1 and len(all_resources) >= max_results:
+                    break
+                cursor = data['next_cursor']
+                search = Search().expression(expression).max_results(500).next_cursor(cursor)
+                data = search.execute()
+                batch = data.get('resources', [])
+                all_resources.extend(batch)
+            
+            return all_resources if max_results == -1 else all_resources[:max_results]
+            
+        except Exception as e:
+            print(f"Search API error: {e}")
+            return []
+    
+    def export_urls_to_csv(self, images: List[Dict], folder_name: str) -> str:
+        """
+        Export image URLs to CSV file in a temporary location
+        
+        Args:
+            images: List of image resources from Cloudinary
+            folder_name: Name of the folder (for filename)
+            
+        Returns:
+            Path to the created CSV file
+        """
+        # Generate timestamp for filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        csv_filename = f"{folder_name.replace('/', '_')}_URLs_{timestamp}.csv"
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(
+            mode='w', 
+            suffix='.csv', 
+            prefix=f"{folder_name.replace('/', '_')}_", 
+            delete=False,
+            encoding='utf-8',
+            newline=''
+        )
+        
+        # Prepare CSV data
+        csv_data = []
+        
+        for img in images:
+            public_id = img.get('public_id', '')
+            filename = os.path.basename(public_id) if public_id else 'unknown'
+            
+            csv_data.append({
+                'filename': filename,
+                'public_id': public_id,
+                'secure_url': img.get('secure_url', ''),
+                'width': img.get('width', ''),
+                'height': img.get('height', ''),
+                'format': img.get('format', ''),
+                'bytes': img.get('bytes', ''),
+                'created_at': img.get('created_at', '')
+            })
+        
+        # Sort by filename for consistency
+        csv_data.sort(key=lambda x: x['filename'])
+        
+        # Write CSV file
+        fieldnames = ['filename', 'public_id', 'secure_url', 'width', 'height', 'format', 'bytes', 'created_at']
+        writer = csv.DictWriter(temp_file, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        writer.writerows(csv_data)
+        
+        temp_file.close()
+        
+        return temp_file.name

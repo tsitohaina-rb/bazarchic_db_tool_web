@@ -1,0 +1,315 @@
+{% extends "base.html" %} {% block title %}Download Cloudinary URLs - Bazarchic
+DB Tool{% endblock %} {% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h1 class="text-2xl font-bold text-gray-800">
+      <i class="fas fa-download text-green-600 mr-2"></i>
+      Download Cloudinary URLs
+    </h1>
+    <p class="text-gray-600 mt-2">
+      Select a Cloudinary folder to export all image URLs to a CSV file
+    </p>
+  </div>
+
+  <!-- Main Form -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <!-- Loading indicator -->
+    <div id="loadingFolders" class="text-center py-8">
+      <div
+        class="inline-flex items-center justify-center w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"
+      ></div>
+      <p class="mt-4 text-gray-600">Loading folders from Cloudinary...</p>
+    </div>
+
+    <!-- Main form -->
+    <form
+      id="downloadForm"
+      method="POST"
+      action="{{ url_for('cloudinary.export_urls') }}"
+      class="hidden"
+    >
+      <div class="mb-6">
+        <label
+          for="folder_name"
+          class="block text-sm font-medium text-gray-700 mb-3"
+        >
+          <i class="fas fa-folder text-primary mr-2"></i>
+          Select Folder
+        </label>
+        <select
+          class="w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-gray-900"
+          id="folder_name"
+          name="folder_name"
+          required
+        >
+          <option value="">-- Select a folder --</option>
+        </select>
+        <p class="mt-2 text-sm text-gray-500">
+          Choose the Cloudinary folder containing the images you want to export.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label
+            for="max_results"
+            class="block text-sm font-medium text-gray-700 mb-3"
+          >
+            <i class="fas fa-hashtag text-primary mr-2"></i>
+            Maximum Results
+          </label>
+          <input
+            type="number"
+            class="w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
+            id="max_results"
+            name="max_results"
+            value="500"
+            min="1"
+            max="10000"
+          />
+          <p class="mt-2 text-sm text-gray-500">
+            Maximum number of images to export (1-10000).
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-3">
+            <i class="fas fa-cogs text-primary mr-2"></i>
+            API Method
+          </label>
+          <div
+            class="flex items-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <input
+              type="checkbox"
+              class="rounded border-gray-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
+              id="use_search_api"
+              name="use_search_api"
+            />
+            <label for="use_search_api" class="ml-3 text-sm text-gray-700">
+              Use Search API for better accuracy
+            </label>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">
+            Search API may provide more accurate results for exact folder
+            matches.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-center">
+        <button
+          type="submit"
+          class="px-8 py-3 w-full bg-primary hover:bg-blue-700 text-white font-semibold justify-center rounded-lg transition duration-200 flex items-center shadow-md hover:shadow-lg"
+          id="exportBtn"
+        >
+          <i class="fas fa-download mr-2"></i>
+          Export URLs to CSV
+        </button>
+      </div>
+    </form>
+
+    <!-- Error message -->
+    <div
+      id="errorMessage"
+      class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6"
+    >
+      <div class="flex">
+        <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+        <span id="errorText" class="text-red-700"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+      <i class="fas fa-star text-yellow-500 mr-2"></i>
+      Features
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div
+        class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg"
+      >
+        <i class="fas fa-file-csv text-green-600 text-3xl mb-3"></i>
+        <h3 class="font-semibold text-gray-900 mb-2">CSV Export</h3>
+        <p class="text-sm text-gray-600">
+          Download URLs in CSV format with comprehensive metadata
+        </p>
+      </div>
+      <div
+        class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg"
+      >
+        <i class="fas fa-folder-tree text-blue-600 text-3xl mb-3"></i>
+        <h3 class="font-semibold text-gray-900 mb-2">Folder Structure</h3>
+        <p class="text-sm text-gray-600">
+          Browse main folders and subfolders automatically
+        </p>
+      </div>
+      <div
+        class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg"
+      >
+        <i class="fas fa-link text-purple-600 text-3xl mb-3"></i>
+        <h3 class="font-semibold text-gray-900 mb-2">Secure URLs</h3>
+        <p class="text-sm text-gray-600">Direct HTTPS links to your images</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Information -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+      <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+      CSV Export Information
+    </h2>
+    <p class="text-gray-700 mb-4">
+      The exported CSV file will contain the following columns:
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="space-y-3">
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-file text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">filename:</span>
+            <span class="text-gray-600 ml-1">Original filename</span>
+          </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-tag text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">public_id:</span>
+            <span class="text-gray-600 ml-1">Cloudinary public ID</span>
+          </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-link text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">secure_url:</span>
+            <span class="text-gray-600 ml-1">HTTPS URL to the image</span>
+          </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-expand-arrows-alt text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">width/height:</span>
+            <span class="text-gray-600 ml-1">Image dimensions</span>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-file-image text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">format:</span>
+            <span class="text-gray-600 ml-1"
+              >Image format (jpg, png, etc.)</span
+            >
+          </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-weight text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">bytes:</span>
+            <span class="text-gray-600 ml-1">File size in bytes</span>
+          </div>
+        </div>
+        <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-clock text-primary w-5 mr-3"></i>
+          <div>
+            <span class="font-medium text-gray-900">created_at:</span>
+            <span class="text-gray-600 ml-1">Upload timestamp</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const loadingDiv = document.getElementById("loadingFolders");
+    const downloadForm = document.getElementById("downloadForm");
+    const errorDiv = document.getElementById("errorMessage");
+    const errorText = document.getElementById("errorText");
+    const folderSelect = document.getElementById("folder_name");
+    const exportBtn = document.getElementById("exportBtn");
+
+    // Load folders on page load
+    loadFolders();
+
+    function loadFolders() {
+      fetch('{{ url_for("cloudinary.api_get_folders") }}')
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            populateFolderSelect(data.folders);
+            loadingDiv.classList.add("hidden");
+            downloadForm.classList.remove("hidden");
+          } else {
+            showError("Failed to load folders: " + data.error);
+          }
+        })
+        .catch((error) => {
+          showError("Error loading folders: " + error.message);
+        });
+    }
+
+    function populateFolderSelect(folders) {
+      // Clear existing options except the first one
+      while (folderSelect.children.length > 1) {
+        folderSelect.removeChild(folderSelect.lastChild);
+      }
+
+      // Add folders
+      folders.forEach((folder) => {
+        const option = document.createElement("option");
+        option.value = folder.value;
+        option.textContent = folder.label;
+
+        if (folder.type === "sub") {
+          option.className = "text-gray-600 text-sm pl-4";
+        }
+
+        folderSelect.appendChild(option);
+      });
+    }
+
+    function showError(message) {
+      errorText.textContent = message;
+      errorDiv.classList.remove("hidden");
+      loadingDiv.classList.add("hidden");
+      downloadForm.classList.remove("hidden");
+    }
+
+    // Handle form submission
+    downloadForm.addEventListener("submit", function (e) {
+      const folderName = folderSelect.value;
+      if (!folderName) {
+        e.preventDefault();
+        alert("Please select a folder");
+        return;
+      }
+
+      // Show loading state
+      exportBtn.disabled = true;
+      exportBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+      exportBtn.className = exportBtn.className.replace(
+        "hover:bg-blue-700",
+        "cursor-not-allowed opacity-75"
+      );
+
+      // Re-enable button after a delay (form will redirect)
+      setTimeout(() => {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML =
+          '<i class="fas fa-download mr-2"></i>Export URLs to CSV';
+        exportBtn.className = exportBtn.className.replace(
+          "cursor-not-allowed opacity-75",
+          "hover:bg-blue-700"
+        );
+      }, 3000);
+    });
+  });
+</script>
+{% endblock %}
