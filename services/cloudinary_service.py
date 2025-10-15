@@ -569,17 +569,19 @@ class CloudinaryService:
             return self._get_images_resources_api(folder_name, max_results)
     
     def _get_images_resources_api(self, folder_name: str, max_results: int) -> List[Dict]:
-        """Get images using the resources API"""
+        """Get images using the resources API - matching original script exactly"""
+        print(f"🔍 Searching for images in folder: {folder_name}")
         all_resources = []
         next_cursor = None
         
         try:
             while True:
+                # Search for resources in the specific folder using prefix
                 if next_cursor:
                     result = cloudinary.api.resources(
                         type='upload',
                         prefix=folder_name,
-                        max_results=min(max_results, 500),
+                        max_results=min(max_results, 500),  # Cloudinary API limit is 500 per request
                         next_cursor=next_cursor
                     )
                 else:
@@ -592,18 +594,24 @@ class CloudinaryService:
                 resources = result.get('resources', [])
                 all_resources.extend(resources)
                 
+                print(f"📁 Found {len(resources)} images in this batch (Total: {len(all_resources)})")
+                
+                # Check if there are more results
                 next_cursor = result.get('next_cursor')
                 if not next_cursor or len(all_resources) >= max_results:
                     break
             
-            return all_resources[:max_results]
+            print(f"✅ Total images found: {len(all_resources)}")
+            return all_resources[:max_results]  # Limit to max_results
             
         except Exception as e:
-            print(f"Error retrieving images: {e}")
+            print(f"❌ Error retrieving images: {str(e)}")
             return []
     
     def _get_images_search_api(self, folder_name: str, max_results: int) -> List[Dict]:
-        """Get images using the Search API"""
+        """Get images using the Search API - matching original script"""
+        print(f"🔍 (Search API) Searching for images in folder: {folder_name}")
+
         expression = f'folder="{folder_name}"'
         search = Search().expression(expression).max_results(500)
         all_resources = []
@@ -612,6 +620,7 @@ class CloudinaryService:
             data = search.execute()
             batch = data.get('resources', [])
             all_resources.extend(batch)
+            print(f"📁 Found {len(batch)} images in first batch (Total: {len(all_resources)})")
             
             while 'next_cursor' in data:
                 if max_results != -1 and len(all_resources) >= max_results:
@@ -621,11 +630,13 @@ class CloudinaryService:
                 data = search.execute()
                 batch = data.get('resources', [])
                 all_resources.extend(batch)
-            
+                print(f"📁 Found {len(batch)} images in next batch (Total: {len(all_resources)})")
+                
+            print(f"✅ Total images found (Search API): {len(all_resources)}")
             return all_resources if max_results == -1 else all_resources[:max_results]
             
         except Exception as e:
-            print(f"Search API error: {e}")
+            print(f"❌ Search API error: {e}")
             return []
     
     def export_urls_to_csv(self, images: List[Dict], folder_name: str) -> str:
