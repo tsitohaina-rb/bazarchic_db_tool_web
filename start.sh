@@ -19,6 +19,6 @@ fi
 echo "✅ Virtual environment activated"
 echo "🌐 Starting Flask server..."
 echo "📍 Access the application at: http://localhost:5000"
-echo "OK"
+echo ""
 
 python app.py
