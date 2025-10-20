@@ -9,6 +9,7 @@ import tempfile
 from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file, jsonify
 from werkzeug.utils import secure_filename
+import cloudinary
 from services.cloudinary_service import CloudinaryService
 
 cloudinary_bp = Blueprint('cloudinary', __name__, url_prefix='/cloudinary')
@@ -327,3 +328,166 @@ def export_urls():
         import traceback
         traceback.print_exc()
         return redirect(url_for('cloudinary.download_urls'))
+
+
+@cloudinary_bp.route('/url-converter')
+def url_converter():
+    """URL converter page for converting existing image URLs to Cloudinary fetch URLs"""
+    return render_template('cloudinary_url_converter.html')
+
+
+@cloudinary_bp.route('/url-converter/convert', methods=['POST'])
+def convert_urls():
+    """Convert image URLs to Cloudinary fetch URLs with transformations"""
+    try:
+        # Get form data
+        raw_urls = request.form.get('image_urls', '').strip()
+        output_format = request.form.get('output_format', '').strip()
+        selected_transformations = request.form.getlist('transformations[]')
+        custom_transformations = request.form.get('custom_transformations', '').strip()
+        
+        if not raw_urls:
+            flash('Please provide at least one image URL', 'error')
+            return redirect(url_for('cloudinary.url_converter'))
+        
+        # Parse URLs (one per line)
+        urls = [url.strip() for url in raw_urls.split('\n') if url.strip()]
+        
+        if not urls:
+            flash('No valid URLs found', 'error')
+            return redirect(url_for('cloudinary.url_converter'))
+        
+        # Build transformations string
+        all_transformations = []
+        
+        # Add selected quick transformations
+        if selected_transformations:
+            all_transformations.extend(selected_transformations)
+        
+        # Add output format if selected
+        if output_format:
+            all_transformations.append(f'f_{output_format}')
+        
+        # Add custom transformations
+        if custom_transformations:
+            # Clean and split custom transformations
+            custom_parts = [t.strip() for t in custom_transformations.replace(' ', '').split(',') if t.strip()]
+            all_transformations.extend(custom_parts)
+        
+        # Join all transformations
+        final_transformations = ','.join(all_transformations) if all_transformations else ''
+        
+        # Get Cloudinary cloud name from environment or config
+        cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME') or cloudinary.config().cloud_name
+        
+        if not cloud_name:
+            flash('Cloudinary cloud name not configured', 'error')
+            return redirect(url_for('cloudinary.url_converter'))
+        
+        # Convert URLs
+        converted_urls = []
+        for original_url in urls:
+            try:
+                # Basic URL validation
+                if not original_url.startswith(('http://', 'https://')):
+                    continue
+                
+                # Build Cloudinary fetch URL
+                base_url = f"https://res.cloudinary.com/{cloud_name}/image/fetch"
+                
+                # Add transformations if provided
+                if final_transformations:
+                    fetch_url = f"{base_url}/{final_transformations}/{original_url}"
+                else:
+                    fetch_url = f"{base_url}/{original_url}"
+                
+                converted_urls.append({
+                    'original': original_url,
+                    'cloudinary': fetch_url
+                })
+                
+            except Exception as e:
+                print(f"Error converting URL {original_url}: {str(e)}")
+                continue
+        
+        if not converted_urls:
+            flash('No URLs could be converted', 'error')
+            return redirect(url_for('cloudinary.url_converter'))
+        
+        # Return results
+        return render_template('cloudinary_url_converter.html', 
+                             converted_urls=converted_urls,
+                             original_transformations=custom_transformations,
+                             original_urls=raw_urls,
+                             selected_format=output_format,
+                             selected_transformations=selected_transformations)
+        
+    except Exception as e:
+        flash(f'Conversion error: {str(e)}', 'error')
+        import traceback
+        traceback.print_exc()
+        return redirect(url_for('cloudinary.url_converter'))
+
+
+@cloudinary_bp.route('/url-converter/export', methods=['POST'])
+def export_converted_urls():
+    """Export converted URLs to CSV"""
+    try:
+        import csv
+        import tempfile
+        from datetime import datetime
+        
+        # Get the converted URLs from form data
+        original_urls = request.form.getlist('original_urls[]')
+        cloudinary_urls = request.form.getlist('cloudinary_urls[]')
+        
+        if not original_urls or not cloudinary_urls:
+            flash('No URLs to export', 'error')
+            return redirect(url_for('cloudinary.url_converter'))
+        
+        # Create temporary CSV file
+        temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False, encoding='utf-8')
+        
+        try:
+            writer = csv.writer(temp_file)
+            writer.writerow(['Original URL', 'Cloudinary Fetch URL'])
+            
+            for original, cloudinary in zip(original_urls, cloudinary_urls):
+                writer.writerow([original, cloudinary])
+            
+            temp_file.close()
+            
+            # Generate download filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            download_filename = f"cloudinary_url_conversion_{timestamp}.csv"
+            
+            # Send file with cleanup
+            response = send_file(
+                temp_file.name,
+                as_attachment=True,
+                download_name=download_filename,
+                mimetype='text/csv'
+            )
+            
+            @response.call_on_close
+            def cleanup():
+                try:
+                    if os.path.exists(temp_file.name):
+                        os.remove(temp_file.name)
+                except:
+                    pass
+            
+            flash(f'Successfully exported {len(original_urls)} converted URLs', 'success')
+            return response
+            
+        except Exception as e:
+            temp_file.close()
+            if os.path.exists(temp_file.name):
+                os.remove(temp_file.name)
+            raise e
+        
+    except Exception as e:
+        flash(f'Export error: {str(e)}', 'error')
+        import traceback
+        traceback.print_exc()
+        return redirect(url_for('cloudinary.url_converter'))

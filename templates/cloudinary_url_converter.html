@@ -1,0 +1,418 @@
+{% extends "base.html" %} {% block title %}Cloudinary URL Converter - Bazarchic
+Database Tool{% endblock %} {% block content %}
+<div class="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div
+            class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg"
+          >
+            <i class="fas fa-link text-white text-xl"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h1 class="text-2xl font-bold text-gray-900">
+            Cloudinary URL Converter
+          </h1>
+          <p class="text-gray-600 mt-1">
+            Convert your existing image URLs to Cloudinary fetch URLs with
+            transformations
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Card -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-semibold text-blue-800">How it works</h3>
+        <div class="mt-2 text-sm text-blue-700">
+          <p class="mb-2">
+            Cloudinary can act as a "proxy" for your existing images without
+            re-uploading them using <strong>fetch delivery</strong>.
+          </p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>Enter your existing image URLs (one per line)</li>
+            <li>
+              Add optional transformations (resize, crop, format, quality, etc.)
+            </li>
+            <li>Get Cloudinary URLs that apply transformations on-the-fly</li>
+            <li>Original images must be publicly accessible</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <form method="POST" action="{{ url_for('cloudinary.convert_urls') }}">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left Column: Input -->
+          <div>
+            <div class="mb-6">
+              <label
+                for="image_urls"
+                class="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                <i class="fas fa-images mr-2 text-purple-500"></i>Image URLs
+              </label>
+              <textarea
+                id="image_urls"
+                name="image_urls"
+                rows="12"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                placeholder="https://www.example.com/images/product1.jpg&#10;https://www.example.com/images/product2.jpg&#10;https://www.example.com/images/product3.jpg"
+                required
+              >
+{{ original_urls or '' }}</textarea
+              >
+              <p class="text-xs text-gray-500 mt-1">
+                Enter one URL per line. URLs must be publicly accessible.
+              </p>
+            </div>
+
+            <!-- Format Selection -->
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-file-image mr-2 text-purple-500"></i>Output Format
+              </label>
+              <select
+                name="output_format"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="" {% if not selected_format %}selected{% endif %}>Keep Original Format</option>
+                <option value="jpg" {% if selected_format == 'jpg' %}selected{% endif %}>JPG</option>
+                <option value="png" {% if selected_format == 'png' %}selected{% endif %}>PNG</option>
+                <option value="webp" {% if selected_format == 'webp' %}selected{% endif %}>WebP</option>
+                <option value="avif" {% if selected_format == 'avif' %}selected{% endif %}>AVIF</option>
+                <option value="gif" {% if selected_format == 'gif' %}selected{% endif %}>GIF</option>
+                <option value="auto" {% if selected_format == 'auto' %}selected{% endif %}>Auto (Best format)</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Select the output format for converted images
+              </p>
+            </div>
+
+            <!-- Quick Transformations -->
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-magic mr-2 text-purple-500"></i>Quick Transformations
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Resize Options -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Resize</h4>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="resize_width" name="transformations[]" value="w_400" class="rounded text-purple-500" {% if selected_transformations and 'w_400' in selected_transformations %}checked{% endif %}>
+                    <label for="resize_width" class="text-sm text-gray-700">Width 400px</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="resize_height" name="transformations[]" value="h_300" class="rounded text-purple-500" {% if selected_transformations and 'h_300' in selected_transformations %}checked{% endif %}>
+                    <label for="resize_height" class="text-sm text-gray-700">Height 300px</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="resize_custom" name="transformations[]" value="w_800,h_600" class="rounded text-purple-500" {% if selected_transformations and 'w_800,h_600' in selected_transformations %}checked{% endif %}>
+                    <label for="resize_custom" class="text-sm text-gray-700">800x600px</label>
+                  </div>
+                </div>
+
+                <!-- Crop Options -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Crop</h4>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="crop_fill" name="transformations[]" value="c_fill" class="rounded text-purple-500" {% if selected_transformations and 'c_fill' in selected_transformations %}checked{% endif %}>
+                    <label for="crop_fill" class="text-sm text-gray-700">Crop and Fill</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="crop_fit" name="transformations[]" value="c_fit" class="rounded text-purple-500" {% if selected_transformations and 'c_fit' in selected_transformations %}checked{% endif %}>
+                    <label for="crop_fit" class="text-sm text-gray-700">Fit Dimensions</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="crop_thumb" name="transformations[]" value="c_thumb,g_face" class="rounded text-purple-500" {% if selected_transformations and 'c_thumb,g_face' in selected_transformations %}checked{% endif %}>
+                    <label for="crop_thumb" class="text-sm text-gray-700">Smart Thumbnail</label>
+                  </div>
+                </div>
+
+                <!-- Quality Options -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Quality</h4>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="quality_auto" name="transformations[]" value="q_auto" class="rounded text-purple-500" {% if selected_transformations and 'q_auto' in selected_transformations %}checked{% endif %}>
+                    <label for="quality_auto" class="text-sm text-gray-700">Auto Quality</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="quality_80" name="transformations[]" value="q_80" class="rounded text-purple-500" {% if selected_transformations and 'q_80' in selected_transformations %}checked{% endif %}>
+                    <label for="quality_80" class="text-sm text-gray-700">Quality 80%</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="dpr_2" name="transformations[]" value="dpr_2.0" class="rounded text-purple-500" {% if selected_transformations and 'dpr_2.0' in selected_transformations %}checked{% endif %}>
+                    <label for="dpr_2" class="text-sm text-gray-700">Retina Display</label>
+                  </div>
+                </div>
+
+                <!-- Effects -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Effects</h4>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="blur_effect" name="transformations[]" value="e_blur:300" class="rounded text-purple-500" {% if selected_transformations and 'e_blur:300' in selected_transformations %}checked{% endif %}>
+                    <label for="blur_effect" class="text-sm text-gray-700">Blur Effect</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="grayscale" name="transformations[]" value="e_grayscale" class="rounded text-purple-500" {% if selected_transformations and 'e_grayscale' in selected_transformations %}checked{% endif %}>
+                    <label for="grayscale" class="text-sm text-gray-700">Grayscale</label>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="sharpen" name="transformations[]" value="e_sharpen" class="rounded text-purple-500" {% if selected_transformations and 'e_sharpen' in selected_transformations %}checked{% endif %}>
+                    <label for="sharpen" class="text-sm text-gray-700">Sharpen</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Transformations -->
+            <div class="mb-6">
+              <label
+                for="custom_transformations"
+                class="block text-sm font-semibold text-gray-700 mb-2"
+              >
+                <i class="fas fa-code mr-2 text-purple-500"></i>Custom Transformations
+                (Optional)
+              </label>
+              <textarea
+                id="custom_transformations"
+                name="custom_transformations"
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                placeholder="e.g., w_500,h_400,c_scale,f_webp,q_90"
+              >{{ original_transformations or '' }}</textarea>
+              <p class="text-xs text-gray-500 mt-1">
+                Add custom transformations that will be combined with selected options above
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <i class="fas fa-sync-alt mr-2"></i>Convert URLs
+            </button>
+          </div>
+
+          <!-- Right Column: Live Preview -->
+          <div>
+            <div class="bg-gray-50 rounded-lg p-4 mb-4">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-eye mr-2"></i>Live Preview
+              </h3>
+              <div class="text-xs text-gray-600 space-y-2">
+                <div>
+                  <strong>Transformations:</strong><br />
+                  <code id="transformation-preview" class="bg-white p-1 rounded text-xs break-all"
+                    >None selected</code
+                  >
+                </div>
+                <div>
+                  <strong>Example URL:</strong><br />
+                  <code id="url-preview" class="bg-white p-1 rounded text-xs break-all"
+                    >https://res.cloudinary.com/{{ 'YOUR_CLOUD' }}/image/fetch/https://example.com/image.jpg</code
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 class="text-sm font-semibold text-green-800 mb-2">
+                <i class="fas fa-lightbulb mr-2"></i>Tips
+              </h3>
+              <div class="text-xs text-green-700 space-y-1">
+                <div>• Select format to convert all images to the same type</div>
+                <div>• Combine multiple transformations for complex effects</div>
+                <div>• Auto format (f_auto) delivers the best format for each browser</div>
+                <div>• Auto quality (q_auto) optimizes file size automatically</div>
+                <div>• Custom transformations override conflicting quick options</div>
+              </div>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+              <h3 class="text-sm font-semibold text-yellow-800 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>Transformation Reference
+              </h3>
+              <div class="text-xs text-yellow-700 space-y-1">
+                <div>
+                  <code class="bg-white px-1 rounded">w_400</code> - Resize width to 400px
+                </div>
+                <div>
+                  <code class="bg-white px-1 rounded">h_300</code> - Resize height to 300px
+                </div>
+                <div>
+                  <code class="bg-white px-1 rounded">c_fill</code> - Crop and fill
+                </div>
+                <div>
+                  <code class="bg-white px-1 rounded">c_fit</code> - Fit within dimensions
+                </div>
+                <div>
+                  <code class="bg-white px-1 rounded">f_jpg</code> - Convert to JPG
+                </div>
+                <div>
+                  <code class="bg-white px-1 rounded">q_auto</code> - Auto quality
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  {% if converted_urls %}
+  <div class="bg-white shadow rounded-lg mt-6">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-check-circle text-green-500 mr-2"></i>Conversion
+          Results
+        </h2>
+        <form
+          method="POST"
+          action="{{ url_for('cloudinary.export_converted_urls') }}"
+          class="inline"
+        >
+          {% for url_pair in converted_urls %}
+          <input
+            type="hidden"
+            name="original_urls[]"
+            value="{{ url_pair.original }}"
+          />
+          <input
+            type="hidden"
+            name="cloudinary_urls[]"
+            value="{{ url_pair.cloudinary }}"
+          />
+          {% endfor %}
+          <button
+            type="submit"
+            class="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors duration-200 text-sm"
+          >
+            <i class="fas fa-download mr-2"></i>Export CSV
+          </button>
+        </form>
+      </div>
+
+      <div class="text-sm text-gray-600 mb-4">
+        Successfully converted {{ converted_urls|length }} URL{{ 's' if
+        converted_urls|length != 1 else '' }}
+      </div>
+
+      <div class="space-y-4 max-h-96 overflow-y-auto">
+        {% for url_pair in converted_urls %}
+        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1"
+                >Original URL</label
+              >
+              <div class="bg-white p-2 rounded border text-xs break-all">
+                {{ url_pair.original }}
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-gray-600"
+                  >Cloudinary Fetch URL</label
+                >
+                <button
+                  onclick="copyToClipboard('{{ url_pair.cloudinary }}')"
+                  class="text-purple-500 hover:text-purple-700 text-xs"
+                  title="Copy to clipboard"
+                >
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <div class="bg-white p-2 rounded border text-xs break-all">
+                {{ url_pair.cloudinary }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    // You could add a toast notification here
+    console.log('Copied to clipboard: ' + text);
+  }).catch(function(err) {
+    console.error('Could not copy text: ', err);
+  });
+}
+
+// Live preview functionality
+function updatePreview() {
+  const transformations = [];
+  
+  // Get selected format
+  const format = document.querySelector('select[name="output_format"]').value;
+  if (format) {
+    transformations.push(`f_${format}`);
+  }
+  
+  // Get selected quick transformations
+  const checkboxes = document.querySelectorAll('input[name="transformations[]"]:checked');
+  checkboxes.forEach(checkbox => {
+    transformations.push(checkbox.value);
+  });
+  
+  // Get custom transformations
+  const customTransformations = document.getElementById('custom_transformations').value.trim();
+  if (customTransformations) {
+    const customParts = customTransformations.replace(/\s/g, '').split(',').filter(t => t);
+    transformations.push(...customParts);
+  }
+  
+  // Update preview
+  const transformationPreview = document.getElementById('transformation-preview');
+  const urlPreview = document.getElementById('url-preview');
+  
+  if (transformations.length > 0) {
+    const transformationString = transformations.join(',');
+    transformationPreview.textContent = transformationString;
+    urlPreview.textContent = `https://res.cloudinary.com/YOUR_CLOUD/image/fetch/${transformationString}/https://example.com/image.jpg`;
+  } else {
+    transformationPreview.textContent = 'None selected';
+    urlPreview.textContent = 'https://res.cloudinary.com/YOUR_CLOUD/image/fetch/https://example.com/image.jpg';
+  }
+}
+
+// Add event listeners when the document is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Update preview on any change
+  const formatSelect = document.querySelector('select[name="output_format"]');
+  const checkboxes = document.querySelectorAll('input[name="transformations[]"]');
+  const customInput = document.getElementById('custom_transformations');
+  
+  formatSelect.addEventListener('change', updatePreview);
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updatePreview);
+  });
+  customInput.addEventListener('input', updatePreview);
+  
+  // Initial preview update
+  updatePreview();
+});
+</script>
+{% endblock %}
